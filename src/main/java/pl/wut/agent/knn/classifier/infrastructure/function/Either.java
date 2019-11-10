@@ -3,9 +3,11 @@ package pl.wut.agent.knn.classifier.infrastructure.function;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.ToString;
 
 import java.util.Objects;
 
+@ToString
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class Either<L, R> {
 

@@ -23,7 +23,12 @@
             <artifactId>jade</artifactId>
             <version>4.5.0</version>
         </dependency>
-
+        <dependency>
+            <groupId>org.spockframework</groupId>
+            <artifactId>spock-core</artifactId>
+            <version>1.3-groovy-2.5</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

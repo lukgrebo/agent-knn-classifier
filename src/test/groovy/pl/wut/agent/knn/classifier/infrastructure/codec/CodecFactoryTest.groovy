@@ -43,14 +43,15 @@ class CodecFactoryTest extends Specification {
         assert kodec.isPresent()
 
         when:
-        final ObjectWithAttributes deserialized = kodec.get().decode(json, ObjectWithAttributes.class)
+        final deserialized = kodec.get().decode(json, ObjectWithAttributes.class)
 
         then:
         deserialized != null
-        deserialized.id == uuid
-        deserialized.getAsString(1).get() == "5"
-        deserialized.getAsString(2).get() == "10"
-
+        deserialized.isLeft()
+        final deserializedObject = deserialized.getLeft() as ObjectWithAttributes
+        deserializedObject.id == uuid
+        deserializedObject.getAsString(1).get() == "5"
+        deserializedObject.getAsString(2).get() == "10"
     }
 
 }

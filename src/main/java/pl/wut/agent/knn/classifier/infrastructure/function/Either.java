@@ -6,6 +6,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 
 import java.util.Objects;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 @ToString
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
@@ -23,6 +25,14 @@ public class Either<L, R> {
 
     public static <L, R> Either<L, R> right(final R right) {
         return new Either<>(null, Objects.requireNonNull(right));
+    }
+
+    public static <T, L, R> Either<L, R> asExceptionHandler(final T input, final Function<T, L> mapping, final BiFunction<Exception, T, R> exceptionMapper) {
+        try {
+            return Either.left(mapping.apply(input));
+        } catch (final Exception e) {
+            return Either.right(exceptionMapper.apply(e, input));
+        }
     }
 
     public boolean isLeft() {

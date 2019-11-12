@@ -1,12 +1,14 @@
 package pl.wut.agent.knn.classifier.definitions.classification;
 
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter
-@RequiredArgsConstructor(staticName = "of")
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class Cluster {
 
     /**
@@ -15,4 +17,8 @@ public class Cluster {
     private final List<ObjectWithAttributes> objectWithAttributes;
 
     private final String clusterClass;
+
+    public static Cluster emptyWithClass(final String className) {
+        return new Cluster(new ArrayList<>(), className);
+    }
 }

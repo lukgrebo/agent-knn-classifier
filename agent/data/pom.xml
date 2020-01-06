@@ -25,6 +25,10 @@
             <artifactId>mining-protocol</artifactId>
         </dependency>
         <dependency>
+            <groupId>pl.wut.sag.knn</groupId>
+            <artifactId>infrastructure-startup</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>1.18.8</version>

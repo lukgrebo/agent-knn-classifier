@@ -17,7 +17,7 @@ public class MiningProtocol extends Protocol {
             .performative(ACLMessage.REQUEST)
             .messageClass(MiningRequest.class)
             .protocol(instance)
-            .targetService(ServiceDescriptionFactory.name("data-agent"))
+            .targetService(ServiceDescriptionFactory.name("data-miner"))
             .stepName("Send mining request")
             .required(true)
             .build();
@@ -26,7 +26,7 @@ public class MiningProtocol extends Protocol {
             .performative(ACLMessage.QUERY_IF)
             .messageClass(UUID.class)
             .protocol(instance)
-            .targetService(ServiceDescriptionFactory.name("data-agent"))
+            .targetService(ServiceDescriptionFactory.name("mining-info-provider"))
             .stepName("Check mining status")
             .required(false)
             .build();

@@ -9,6 +9,7 @@ import pl.wut.sag.knn.agent.data.config.DataAgentConfiguration;
 import pl.wut.sag.knn.agent.data.loader.CsvObjectParser;
 import pl.wut.sag.knn.agent.data.loader.DataLoader;
 import pl.wut.sag.knn.agent.data.model.AuctionStatus;
+import pl.wut.sag.knn.infrastructure.MessageSender;
 import pl.wut.sag.knn.infrastructure.codec.Codec;
 import pl.wut.sag.knn.infrastructure.discovery.ServiceDiscovery;
 import pl.wut.sag.knn.infrastructure.discovery.ServiceRegistration;
@@ -33,7 +34,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class DataAgent extends Agent {
+public class DataAgent extends Agent implements MessageSender {
 
     private final Codec codec = Codec.json();
     private final CsvObjectParser csvObjectParser = new CsvObjectParser();
@@ -68,7 +69,7 @@ public class DataAgent extends Agent {
         if (currentRunner == null) {
             log.info("Could not parse {}", parsedEntries.stream().filter(Result::isError).collect(Collectors.toList()).size());
             final Set<ObjectWithAttributes> objects = parsedEntries.stream().filter(Result::isValid).map(Result::result).collect(Collectors.toSet());
-            currentRunner = auctionRunnerFactory.newRunner(objects);
+            currentRunner = auctionRunnerFactory.newRunner(request.getRequestId(), objects);
         } else {
             log.info("Currently there is auction ongoing, add request to queue");
             miningRequests.add(request);

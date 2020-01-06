@@ -25,6 +25,10 @@
             <groupId>pl.wut.sag.knn</groupId>
             <artifactId>messaging</artifactId>
         </dependency>
+        <dependency>
+            <groupId>pl.wut.sag.knn</groupId>
+            <artifactId>mining-protocol</artifactId>
+        </dependency>
     </dependencies>
 
 </project>

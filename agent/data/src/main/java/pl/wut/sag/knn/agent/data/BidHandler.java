@@ -1,18 +1,17 @@
 package pl.wut.sag.knn.agent.data;
 
 import jade.core.AID;
-import jade.core.behaviours.CyclicBehaviour;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import pl.wut.sag.knn.agent.data.config.DataAgentConfiguration;
-import pl.wut.sag.knn.agent.data.config.DiscoveryService;
 import pl.wut.sag.knn.agent.data.model.Auction;
 import pl.wut.sag.knn.infrastructure.codec.Codec;
-import pl.wut.sag.knn.infrastructure.codec.CodecFactory;
 import pl.wut.sag.knn.infrastructure.codec.DecodingError;
+import pl.wut.sag.knn.infrastructure.discovery.ServiceDiscovery;
 import pl.wut.sag.knn.infrastructure.function.Result;
 import pl.wut.sag.knn.ontology.auction.Bid;
 
@@ -23,28 +22,15 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class DataAuctioner extends CyclicBehaviour {
+@RequiredArgsConstructor
+public class BidHandler {
 
-    private final CodecFactory codecFactory = CodecFactory.instance();
     private final List<Auction> auctions = new ArrayList<>();
-    private final DataAgentConfiguration config = new DataAgentConfiguration();
+    private final DataAgentConfiguration config;
+    private final Codec codec;
+    private final ServiceDiscovery serviceDiscovery;
 
-    @Override
-    public void action() {
-        ACLMessage receive;
-        while ((receive = myAgent.receive()) != null) {
-            if (receive.getPerformative() == ACLMessage.PROPOSE && receive.getOntology().equalsIgnoreCase(config.objectMarketOntology())) {
-                final Optional<Codec> codec = codecFactory.forKodec(receive.getLanguage());
-                if (codec.isPresent()) {
-                    handleBid(receive, codec.get());
-                } else {
-                    log.error("Codec not found for language: " + receive.getLanguage());
-                }
-            }
-        }
-    }
-
-    private void handleBid(final ACLMessage receive, final Codec codec) {
+    public void handleBid(final ACLMessage receive) {
         final Result<Bid, DecodingError> decode = codec.decode(receive.getContent(), Bid.class);
         if (decode.isError()) {
             log.error("Cannot decode: " + receive.getContent(), decode.error().getCause());
@@ -70,9 +56,8 @@ public class DataAuctioner extends CyclicBehaviour {
         final ServiceDescription serviceDescription = new ServiceDescription();
         serviceDescription.setName(config.clusteringServiceName());
 
-        final Result<List<AID>, FIPAException> cluteringAgentSearchResult =
-                DiscoveryService.search(myAgent, serviceDescription)
-                        .mapResult(a -> a.stream().map(DFAgentDescription::getName).collect(Collectors.toList()));
+        final Result<List<AID>, FIPAException> cluteringAgentSearchResult = serviceDiscovery.findServices(serviceDescription)
+                .mapResult(a -> a.stream().map(DFAgentDescription::getName).collect(Collectors.toList()));
 
         return cluteringAgentSearchResult.isValid() && alreadyBidded.containsAll(cluteringAgentSearchResult.result());
     }

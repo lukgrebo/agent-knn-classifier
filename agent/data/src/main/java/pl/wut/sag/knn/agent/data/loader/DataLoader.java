@@ -8,10 +8,11 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
-import java.util.stream.Stream;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public interface DataLoader {
-    Result<Stream<String>, IOException> openDataStream(final URL url);
+    Result<List<String>, IOException> getData(final URL url);
 
     static DataLoader defaultLoader() {
         return new DefaultDataLoader();
@@ -21,11 +22,11 @@ public interface DataLoader {
 class DefaultDataLoader implements DataLoader {
 
     @Override
-    public Result<Stream<String>, IOException> openDataStream(final URL url) {
+    public Result<List<String>, IOException> getData(final URL url) {
         try {
             final URLConnection conn = url.openConnection();
             try (final BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
-                return Result.ok(reader.lines());
+                return Result.ok(reader.lines().collect(Collectors.toList()));
             }
         } catch (final IOException e) {
             return Result.error(e);

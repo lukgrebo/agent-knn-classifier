@@ -35,7 +35,7 @@ public class UserAgentApi {
                         ctx.result("Could not decode incoming object");
                         return;
                     }
-                    final Result<String, Exception> miningResponse = userAgentApiHandle.processMiningRequest(decodingResult.result());
+                    final Result<String, ? extends Exception> miningResponse = userAgentApiHandle.processMiningRequest(decodingResult.result());
                     if (miningResponse.isError()) {
                         ctx.result("Could not start mining: " + miningResponse.error().getMessage());
                         return;

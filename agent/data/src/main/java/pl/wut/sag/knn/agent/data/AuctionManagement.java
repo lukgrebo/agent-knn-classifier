@@ -4,50 +4,44 @@ import jade.core.AID;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.FIPAException;
-import jade.lang.acl.ACLMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import pl.wut.sag.knn.agent.data.config.DataAgentConfiguration;
 import pl.wut.sag.knn.agent.data.model.Auction;
 import pl.wut.sag.knn.infrastructure.codec.Codec;
-import pl.wut.sag.knn.infrastructure.codec.DecodingError;
 import pl.wut.sag.knn.infrastructure.discovery.ServiceDiscovery;
 import pl.wut.sag.knn.infrastructure.function.Result;
 import pl.wut.sag.knn.ontology.auction.Bid;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
 @RequiredArgsConstructor
-public class BidHandler {
+public class AuctionManagement {
 
-    private final List<Auction> auctions = new ArrayList<>();
+    private final Map<UUID, Auction> auctionByObjectId = new HashMap<>();
     private final DataAgentConfiguration config;
     private final Codec codec;
     private final ServiceDiscovery serviceDiscovery;
 
-    public void handleBid(final ACLMessage receive) {
-        final Result<Bid, DecodingError> decode = codec.decode(receive.getContent(), Bid.class);
-        if (decode.isError()) {
-            log.error("Cannot decode: " + receive.getContent(), decode.error().getCause());
-        } else {
-            final Bid bid = decode.result();
-            final Optional<Auction> auctionOpt = findAuction(bid);
+    public void handleBid(final Bid bid) {
+        final Optional<Auction> auctionOpt = findAuction(bid);
 
-            if (!auctionOpt.isPresent()) {
-                log.info("Auction for bid: " + bid.getObjectUuid() + " not found");
-                return;
-            }
+        if (!auctionOpt.isPresent()) {
+            log.info("Auction for bid: " + bid.getObjectUuid() + " not found");
+            return;
+        }
 
-            final Auction auction = auctionOpt.get();
-            auction.getBids().put(receive.getSender(), bid);
-            if (shouldFinalize(auction)) {
-                finalize(auction);
-            }
+        final Auction auction = auctionOpt.get();
+        if (shouldFinalize(auction)) {
+            finalize(auction);
         }
     }
 
@@ -68,6 +62,6 @@ public class BidHandler {
     }
 
     private Optional<Auction> findAuction(final Bid bid) {
-        return this.auctions.stream().filter(a -> a.getObject().getId().equals(bid.getObjectUuid())).findFirst();
+        return Optional.ofNullable(auctionByObjectId.get(bid.getObjectUuid()));
     }
 }

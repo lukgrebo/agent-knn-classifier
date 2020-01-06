@@ -6,5 +6,5 @@ import pl.wut.sag.knn.infrastructure.function.Result;
 
 public interface UserAgentApiHandle {
 
-    Result<String, Exception> processMiningRequest(MiningRequest miningRequest);
+    Result<String, ? extends Exception> processMiningRequest(MiningRequest miningRequest);
 }

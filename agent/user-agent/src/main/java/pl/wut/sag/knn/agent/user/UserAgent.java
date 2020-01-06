@@ -1,12 +1,16 @@
 package pl.wut.sag.knn.agent.user;
 
 import jade.core.Agent;
+import jade.domain.FIPAException;
 import lombok.extern.slf4j.Slf4j;
 import pl.wut.sag.knn.agent.user.api.UserAgentApi;
 import pl.wut.sag.knn.agent.user.api.UserAgentApiHandle;
 import pl.wut.sag.knn.agent.user.api.dto.MiningRequest;
 import pl.wut.sag.knn.infrastructure.codec.Codec;
+import pl.wut.sag.knn.infrastructure.collection.CollectionUtil;
+import pl.wut.sag.knn.infrastructure.discovery.ServiceDiscovery;
 import pl.wut.sag.knn.infrastructure.function.Result;
+import pl.wut.sag.knn.protocol.MiningProtocol;
 
 import java.util.UUID;
 
@@ -14,6 +18,7 @@ import java.util.UUID;
 public class UserAgent extends Agent implements UserAgentApiHandle {
 
     private final Codec codec = Codec.json();
+    private final ServiceDiscovery serviceDiscovery = new ServiceDiscovery(this);
 
     @Override
     protected void setup() {
@@ -24,10 +29,15 @@ public class UserAgent extends Agent implements UserAgentApiHandle {
     }
 
     @Override
-    public Result<String, Exception> processMiningRequest(final MiningRequest miningRequest) {
+    public Result<String, ? extends Exception> processMiningRequest(final MiningRequest miningRequest) {
         log.info("Got mining request to process {}", miningRequest);
         final UUID uuid = UUID.randomUUID();
 
-        return Result.ok("Otrzymaliśmy zlecenie data miningu, nadane id " + uuid);
+        final Result<String, FIPAException> stringFIPAExceptionResult = serviceDiscovery.findServices(MiningProtocol.sendRequest.getTargetService())
+                .mapResult(CollectionUtil::firstElement)
+                .mapResult(Object::toString);
+
+        return stringFIPAExceptionResult;
+
     }
 }

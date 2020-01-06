@@ -14,4 +14,8 @@ import java.util.Map;
 public class Auction {
     private final ObjectWithAttributes object;
     private final Map<AID, Bid> bids = new HashMap<>();
+
+    public void registerBid(final AID sender, final Bid bid) {
+        bids.put(sender, bid);
+    }
 }

@@ -24,6 +24,10 @@
             <groupId>pl.wut.sag.knn</groupId>
             <artifactId>auction-protocol</artifactId>
         </dependency>
+        <dependency>
+            <groupId>pl.wut.sag.knn</groupId>
+            <artifactId>infrastructure-startup</artifactId>
+        </dependency>
     </dependencies>
 
 </project>

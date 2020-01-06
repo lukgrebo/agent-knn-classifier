@@ -4,7 +4,6 @@ import jade.core.AID;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import pl.wut.sag.knn.agent.data.model.Auction;
 import pl.wut.sag.knn.agent.data.model.AuctionStatus;
@@ -20,7 +19,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.UUID;
@@ -28,27 +26,37 @@ import java.util.stream.Collectors;
 
 
 public interface AuctionRunner {
-    void handleBid(final Bid bid);
+    void handleBid(final Bid bid, final AID sender);
 
     AuctionStatus getAuctionStatus();
 }
 
 @Slf4j
-@RequiredArgsConstructor
 class DefaultAuctionRunner implements AuctionRunner {
+
+    DefaultAuctionRunner(final UUID correspondingRequestUUID, final Codec codec, final Queue<ObjectWithAttributes> objectsToPropose, final ServiceDiscovery serviceDiscovery, final MessageSender messageSender) {
+        this.correspondingRequestUUID = correspondingRequestUUID;
+        this.codec = codec;
+        this.objectsToPropose = objectsToPropose;
+        this.serviceDiscovery = serviceDiscovery;
+        this.messageSender = messageSender;
+        startNewAuction();
+    }
 
     private final UUID correspondingRequestUUID;
     private final Codec codec;
     private final Queue<ObjectWithAttributes> objectsToPropose;
-    private Auction currentAuction = new Auction(objectsToPropose.peek());
+    private Auction currentAuction;
     private final ServiceDiscovery serviceDiscovery;
     private final MessageSender messageSender;
 
     @Override
-    public void handleBid(final Bid bid) {
-        if (bid.getObjectUuid().equals(currentAuction.getObject().getId())) {
+    public void handleBid(final Bid bid, final AID sender) {
+        if (!bid.getObjectUuid().equals(currentAuction.getObject().getId())) {
             log.error("Auction for object" + bid.getObjectUuid() + " has already ended");
         }
+
+        currentAuction.registerBid(sender, bid);
 
         if (shouldFinalize(currentAuction)) {
             finalize(currentAuction);
@@ -57,9 +65,14 @@ class DefaultAuctionRunner implements AuctionRunner {
     }
 
     private void startNewAuction() {
-        Optional.ofNullable(objectsToPropose.poll()).ifPresent(o -> {
-            currentAuction = new Auction(o);
-        });
+        final Optional<ObjectWithAttributes> objectToProcess = Optional.ofNullable(objectsToPropose.poll());
+        objectToProcess.ifPresent(o -> currentAuction = new Auction(o));
+        if (objectToProcess.isPresent()) {
+            log.info("New object is being processed, objects left {}", objectsToPropose.size());
+            proposeCurrentObject();
+        } else {
+            log.info("No new auction will be started. Auction ended.");
+        }
     }
 
     @Override
@@ -82,7 +95,7 @@ class DefaultAuctionRunner implements AuctionRunner {
     private void proposeCurrentObject() {
         final Result<List<DFAgentDescription>, FIPAException> clusters = serviceDiscovery.findServices(AuctionProtocol.proposeObject.getTargetService());
         if (clusters.isError() || clusters.result().isEmpty()) {
-            log.error("Either error or no clusters found {}" + clusters.error());
+            log.error("Either error or no clusters found error: " + clusters.error());
             return;
         }
         final List<AID> names = clusters.result().stream().map(DFAgentDescription::getName).collect(Collectors.toList());

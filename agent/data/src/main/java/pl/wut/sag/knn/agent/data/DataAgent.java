@@ -39,7 +39,7 @@ public class DataAgent extends Agent implements MessageSender {
     private final Codec codec = Codec.json();
     private final CsvObjectParser csvObjectParser = new CsvObjectParser();
     private final Queue<MiningRequest> miningRequests = new ArrayDeque<>();
-    private final AuctionRunnerFactory auctionRunnerFactory = new AuctionRunnerFactory(new DataAgentConfiguration(), codec, new ServiceDiscovery(this));
+    private final AuctionRunnerFactory auctionRunnerFactory = new AuctionRunnerFactory(new DataAgentConfiguration(), codec, new ServiceDiscovery(this), this);
     private AuctionRunner currentRunner;
 
     @Override
@@ -80,9 +80,9 @@ public class DataAgent extends Agent implements MessageSender {
         final Bid bid = codec.decode(message.getContent(), AuctionProtocol.sendBid.getMessageClass()).result();
         if (currentRunner != null) {
             log.info("Got bid {}", bid);
-            currentRunner.handleBid(bid);
+            currentRunner.handleBid(bid, message.getSender());
         } else {
-            log.warn("There is no ongoing auction and bid was received, ingoring {}", bid);
+            log.warn("There is no ongoing auction and bid was received, ignoring {}", bid);
         }
     }
 

@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import pl.wut.sag.knn.agent.clustering.algorithm.DistanceCalculator;
 import pl.wut.sag.knn.agent.clustering.algorithm.EuclideanDistanceCalculator;
 import pl.wut.sag.knn.infrastructure.codec.Codec;
+import pl.wut.sag.knn.infrastructure.discovery.ServiceRegistration;
 import pl.wut.sag.knn.infrastructure.message_handler.MessageHandler;
 import pl.wut.sag.knn.infrastructure.message_handler.MessageSpecification;
 import pl.wut.sag.knn.infrastructure.parser.DoubleParser;
@@ -13,10 +14,11 @@ import pl.wut.sag.knn.ontology.auction.Bid;
 import pl.wut.sag.knn.ontology.object.ObjectWithAttributes;
 import pl.wut.sag.knn.protocol.auction.AuctionProtocol;
 
+import java.time.Duration;
 import java.util.UUID;
 
 @Slf4j
-public class DefaultClusteringAgent extends Agent {
+public class ClusteringAgent extends Agent {
 
     private final Cluster managedCluster = Cluster.emptyWithClass(UUID.randomUUID().toString());
     private final DistanceCalculator distanceCalculator = new EuclideanDistanceCalculator(new DoubleParser());
@@ -53,7 +55,8 @@ public class DefaultClusteringAgent extends Agent {
     }
 
     private void registerToYellowPages() {
-
+        ServiceRegistration.registerRetryOnFailure(this, Duration.ofSeconds(5),
+                AuctionProtocol.proposeObject.getTargetService());
     }
 
     private void replyPositive(final ACLMessage message) {

@@ -20,6 +20,10 @@
             <groupId>pl.wut.sag.knn</groupId>
             <artifactId>messaging</artifactId>
         </dependency>
+        <dependency>
+            <groupId>pl.wut.sag.knn</groupId>
+            <artifactId>auction-protocol</artifactId>
+        </dependency>
     </dependencies>
 
 </project>

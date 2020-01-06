@@ -1,7 +1,8 @@
 package pl.wut.sag.knn.clustering.service
 
-import pl.wut.agent.knn.classifier.definitions.classification.ObjectWithAttributes
-import pl.wut.agent.knn.classifier.infrastructure.parser.DoubleParser
+import pl.wut.sag.knn.agent.clustering.algorithm.EuclideanDistanceCalculator
+import pl.wut.sag.knn.infrastructure.parser.DoubleParser
+import pl.wut.sag.knn.ontology.object.ObjectWithAttributes
 import spock.lang.Specification
 import spock.lang.Unroll
 

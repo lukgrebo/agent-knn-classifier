@@ -18,7 +18,7 @@
         </dependency>
         <dependency>
             <groupId>pl.wut.sag.knn</groupId>
-            <artifactId>auction-ontology</artifactId>
+            <artifactId>auction-protocol</artifactId>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>

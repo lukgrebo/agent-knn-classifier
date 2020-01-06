@@ -78,9 +78,7 @@ public class DataAuctioner extends CyclicBehaviour {
     }
 
     private void finalize(final Auction auction) {
-        auction.getBids().entrySet().stream()
-                .sorted(Comparator.comparingDouble(e -> e.getValue().getValue()))
-                .findFirst()
+        auction.getBids().entrySet().stream().max(Comparator.comparingDouble(e -> e.getValue().getValue()))
                 .ifPresent(null /* todo, finalize */);
     }
 

@@ -8,6 +8,8 @@ import pl.wut.sag.knn.agent.user.api.dto.MiningRequest;
 import pl.wut.sag.knn.infrastructure.codec.Codec;
 import pl.wut.sag.knn.infrastructure.function.Result;
 
+import java.util.UUID;
+
 @Slf4j
 public class UserAgent extends Agent implements UserAgentApiHandle {
 
@@ -24,6 +26,8 @@ public class UserAgent extends Agent implements UserAgentApiHandle {
     @Override
     public Result<String, Exception> processMiningRequest(final MiningRequest miningRequest) {
         log.info("Got mining request to process {}", miningRequest);
-        return Result.ok("Hehe xD");
+        final UUID uuid = UUID.randomUUID();
+
+        return Result.ok("Otrzymaliśmy zlecenie data miningu, nadane id " + uuid);
     }
 }

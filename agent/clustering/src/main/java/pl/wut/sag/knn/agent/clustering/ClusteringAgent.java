@@ -11,11 +11,13 @@ import pl.wut.sag.knn.infrastructure.message_handler.MessageHandler;
 import pl.wut.sag.knn.infrastructure.message_handler.MessageSpecification;
 import pl.wut.sag.knn.infrastructure.parser.DoubleParser;
 import pl.wut.sag.knn.ontology.auction.Bid;
+import pl.wut.sag.knn.ontology.auction.ClusterSummary;
 import pl.wut.sag.knn.ontology.object.ObjectWithAttributes;
 import pl.wut.sag.knn.protocol.auction.AuctionProtocol;
 
 import java.time.Duration;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class ClusteringAgent extends Agent {
@@ -28,9 +30,16 @@ public class ClusteringAgent extends Agent {
     protected void setup() {
         this.addBehaviour(new MessageHandler(
                 MessageSpecification.of(AuctionProtocol.proposeObject.toMessageTemplate(), this::bidRequested),
-                MessageSpecification.of(AuctionProtocol.acceptBidAndSendObject.toMessageTemplate(), this::addNewObject)
+                MessageSpecification.of(AuctionProtocol.acceptBidAndSendObject.toMessageTemplate(), this::addNewObject),
+                MessageSpecification.of(AuctionProtocol.requestSummary.toMessageTemplate(), this::sendSummary)
         ));
         this.registerToYellowPages();
+    }
+
+    private void sendSummary(final ACLMessage message) {
+        final ClusterSummary summary = new ClusterSummary(managedCluster.getElements().stream().map(ObjectWithAttributes::getId).collect(Collectors.toSet()));
+
+        send(AuctionProtocol.summaryResponse.toResponse(message, codec.encode(summary)));
     }
 
     private void bidRequested(final ACLMessage aclMessage) {
@@ -61,7 +70,8 @@ public class ClusteringAgent extends Agent {
 
     private void registerToYellowPages() {
         ServiceRegistration.registerRetryOnFailure(this, Duration.ofSeconds(5),
-                AuctionProtocol.proposeObject.getTargetService());
+                AuctionProtocol.proposeObject.getTargetService(),
+                AuctionProtocol.requestSummary.getTargetService());
     }
 
     private void replyPositive(final ACLMessage message) {

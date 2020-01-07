@@ -1,6 +1,7 @@
 package pl.wut.sag.knn.agent.data;
 
 import jade.core.Agent;
+import jade.core.behaviours.TickerBehaviour;
 import jade.lang.acl.ACLMessage;
 import lombok.extern.slf4j.Slf4j;
 import pl.wut.sag.knn.agent.data.auction.AuctionRunner;
@@ -42,14 +43,15 @@ public class DataAgent extends Agent implements MessageSender {
     private final ClusteringAgentRunner clusteringAgentRunner = ClusteringAgentRunner.initializeClusteringAgentsContainerAndGetRunner();
     private final AuctionRunnerFactory auctionRunnerFactory = new AuctionRunnerFactory(new DataAgentConfiguration(), codec, new ServiceDiscovery(this), this, clusteringAgentRunner);
     private AuctionRunner currentRunner;
+    final MessageHandler messageHandler = new MessageHandler(
+            MessageSpecification.of(MiningProtocol.sendRequest.toMessageTemplate(), this::startMining),
+            MessageSpecification.of(AuctionProtocol.sendBid.toMessageTemplate(), this::handleBid),
+            MessageSpecification.of(MiningProtocol.checkStatus.toMessageTemplate(), this::checkStatus)
+    );
 
     @Override
     protected void setup() {
-        addBehaviour(new MessageHandler(
-                MessageSpecification.of(MiningProtocol.sendRequest.toMessageTemplate(), this::startMining),
-                MessageSpecification.of(AuctionProtocol.sendBid.toMessageTemplate(), this::handleBid),
-                MessageSpecification.of(MiningProtocol.checkStatus.toMessageTemplate(), this::checkStatus)
-        ));
+        addBehaviour(messageHandler);
         /* Start one clustering agent on the start of application */
         clusteringAgentRunner.runClusteringAgent();
         registerServices();
@@ -77,6 +79,17 @@ public class DataAgent extends Agent implements MessageSender {
             log.info("Currently there is auction ongoing, add request to queue");
             miningRequests.add(request);
         }
+        addBehaviour(new TickerBehaviour(this, Duration.ofSeconds(3).toMillis()) {
+            @Override
+            protected void onTick() {
+                final AuctionStatus status = currentRunner.getAuctionStatus();
+                if (status.isFinished()) {
+                    log.info("Mining finished, preparing for loading statistics");
+                    removeBehaviour(this);
+
+                }
+            }
+        });
     }
 
     private void handleBid(final ACLMessage message) {

@@ -1,11 +1,15 @@
 package pl.wut.sag.knn.ontology.auction;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Set;
 import java.util.UUID;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class ClusterSummary {
-    private final Set<UUID> objectsIds;
+    private Set<UUID> objectsIds;
 }

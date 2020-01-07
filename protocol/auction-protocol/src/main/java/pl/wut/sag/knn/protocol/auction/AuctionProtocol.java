@@ -5,6 +5,7 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import pl.wut.sag.knn.ontology.auction.Bid;
 import pl.wut.sag.knn.ontology.auction.ClusterSummary;
+import pl.wut.sag.knn.ontology.auction.ClusterSummaryRequest;
 import pl.wut.sag.knn.ontology.object.ObjectWithAttributes;
 import pl.wut.sag.knn.protocol.Protocol;
 import pl.wut.sag.knn.protocol.ProtocolStep;
@@ -51,14 +52,23 @@ public class AuctionProtocol extends Protocol {
                     .stepName("Accept bid and send object")
                     .build();
 
-    public static final TargetedStep<AuctionProtocol, ClusterSummary> requestSummary =
-            TargetedStep.<AuctionProtocol, ClusterSummary>targetedBuilder()
+    public static final TargetedStep<AuctionProtocol, ClusterSummaryRequest> requestSummary =
+            TargetedStep.<AuctionProtocol, ClusterSummaryRequest>targetedBuilder()
                     .performative(ACLMessage.REQUEST)
                     .required(false)
                     .protocol(instance)
-                    .messageClass(ClusterSummary.class)
+                    .messageClass(ClusterSummaryRequest.class)
                     .stepName("Request cluster summary")
                     .targetService(ServiceDescriptionFactory.name("auction-summary-provider"))
+                    .build();
+
+    public static final ResponseStep<AuctionProtocol, ClusterSummary> summaryResponse =
+            ResponseStep.<AuctionProtocol, ClusterSummary>responseStepBuilder()
+                    .performative(ACLMessage.INFORM)
+                    .required(false)
+                    .protocol(instance)
+                    .messageClass(ClusterSummary.class)
+                    .stepName("Respond with cluster summary")
                     .build();
 
 

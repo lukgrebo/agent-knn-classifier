@@ -7,4 +7,5 @@ import java.net.URL;
 @Data
 public class MiningRequest {
     private URL miningUrl;
+    private double minimalBid;
 }

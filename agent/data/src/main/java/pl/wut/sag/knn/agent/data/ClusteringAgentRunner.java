@@ -9,13 +9,14 @@ import pl.wut.sag.knn.infrastructure.function.Result;
 import pl.wut.sag.knn.infrastructure.startup.AgentStartupInfoImpl;
 import pl.wut.sag.knn.infrastructure.startup.AgentStartupManager;
 
-import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class ClusteringAgentRunner {
 
     private final AgentStartupManager manager;
     private final AgentContainer container;
+    private static final AtomicInteger counter = new AtomicInteger(0);
 
     public static ClusteringAgentRunner initializeClusteringAgentsContainerAndGetRunner() {
         final AgentStartupManager manager = new AgentStartupManager();
@@ -31,7 +32,7 @@ public class ClusteringAgentRunner {
 
     public Result<Void, StaleProxyException> runClusteringAgent() {
         try {
-            manager.startAgent(container, ClusteringAgent.class, "clusteringAgent" + UUID.randomUUID(), new Object());
+            manager.startAgent(container, ClusteringAgent.class, "clustering" + counter.incrementAndGet(), new Object());
             return Result.empty();
         } catch (final StaleProxyException e) {
             return Result.error(e);

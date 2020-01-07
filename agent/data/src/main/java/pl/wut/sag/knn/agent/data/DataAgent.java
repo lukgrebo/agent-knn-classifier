@@ -50,6 +50,8 @@ public class DataAgent extends Agent implements MessageSender {
                 MessageSpecification.of(AuctionProtocol.sendBid.toMessageTemplate(), this::handleBid),
                 MessageSpecification.of(MiningProtocol.checkStatus.toMessageTemplate(), this::checkStatus)
         ));
+        /* Start one clustering agent on the start of application */
+        clusteringAgentRunner.runClusteringAgent();
         registerServices();
     }
 
@@ -80,7 +82,7 @@ public class DataAgent extends Agent implements MessageSender {
     private void handleBid(final ACLMessage message) {
         final Bid bid = codec.decode(message.getContent(), AuctionProtocol.sendBid.getMessageClass()).result();
         if (currentRunner != null) {
-            log.info("Got bid {}", bid);
+            log.info("Got bid {} from {}", bid, message.getSender().getName());
             currentRunner.handleBid(bid, message.getSender());
         } else {
             log.warn("There is no ongoing auction and bid was received, ignoring {}", bid);

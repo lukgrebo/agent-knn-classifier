@@ -39,9 +39,9 @@ public class ClusteringAgent extends Agent {
         final double averageDistance = managedCluster.getElements().stream()
                 .mapToDouble(o -> distanceCalculator.calculateDistance(o, objectUnderClassification))
                 .average()
-                .orElse(Double.MAX_VALUE);
+                .orElse(Double.MIN_VALUE);
 
-        final double bidValue = 1 / averageDistance;
+        final double bidValue = managedCluster.getElements().isEmpty() ? Double.MAX_VALUE : 1 / averageDistance;
 
         final ACLMessage reply = AuctionProtocol.sendBid.toResponse(aclMessage, codec.encode(Bid.from(bidValue, objectUnderClassification.getId())));
 

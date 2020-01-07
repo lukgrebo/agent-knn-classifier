@@ -69,6 +69,7 @@ class DefaultAuctionRunner implements AuctionRunner {
         } else if (beliefs.shouldCreateNewAgent(currentAuction)) {
             final Result<Void, StaleProxyException> result = clusteringAgentRunner.runClusteringAgent();
             log.info("New clustering agent creation result: " + result);
+            proposeCurrentObject();
         }
     }
 

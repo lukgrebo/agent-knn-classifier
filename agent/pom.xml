@@ -15,6 +15,7 @@
         <module>data</module>
         <module>clustering</module>
         <module>user-agent</module>
+        <module>management-agent</module>
     </modules>
 
 

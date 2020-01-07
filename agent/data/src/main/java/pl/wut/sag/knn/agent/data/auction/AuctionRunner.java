@@ -5,6 +5,7 @@ import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
 import lombok.extern.slf4j.Slf4j;
+import pl.wut.sag.knn.agent.data.ClusteringAgentRunner;
 import pl.wut.sag.knn.agent.data.model.Auction;
 import pl.wut.sag.knn.agent.data.model.AuctionStatus;
 import pl.wut.sag.knn.infrastructure.MessageSender;
@@ -34,12 +35,13 @@ public interface AuctionRunner {
 @Slf4j
 class DefaultAuctionRunner implements AuctionRunner {
 
-    DefaultAuctionRunner(final UUID correspondingRequestUUID, final Codec codec, final Queue<ObjectWithAttributes> objectsToPropose, final ServiceDiscovery serviceDiscovery, final MessageSender messageSender) {
+    DefaultAuctionRunner(final UUID correspondingRequestUUID, final Codec codec, final Queue<ObjectWithAttributes> objectsToPropose, final ServiceDiscovery serviceDiscovery, final MessageSender messageSender, final ClusteringAgentRunner clusteringAgentRunner) {
         this.correspondingRequestUUID = correspondingRequestUUID;
         this.codec = codec;
         this.objectsToPropose = objectsToPropose;
         this.serviceDiscovery = serviceDiscovery;
         this.messageSender = messageSender;
+        this.clusteringAgentRunner = clusteringAgentRunner;
         startNewAuction();
     }
 
@@ -49,6 +51,7 @@ class DefaultAuctionRunner implements AuctionRunner {
     private Auction currentAuction;
     private final ServiceDiscovery serviceDiscovery;
     private final MessageSender messageSender;
+    private final ClusteringAgentRunner clusteringAgentRunner;
 
     @Override
     public void handleBid(final Bid bid, final AID sender) {

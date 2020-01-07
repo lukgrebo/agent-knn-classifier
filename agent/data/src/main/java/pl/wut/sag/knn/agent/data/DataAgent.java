@@ -39,7 +39,8 @@ public class DataAgent extends Agent implements MessageSender {
     private final Codec codec = Codec.json();
     private final CsvObjectParser csvObjectParser = new CsvObjectParser();
     private final Queue<MiningRequest> miningRequests = new ArrayDeque<>();
-    private final AuctionRunnerFactory auctionRunnerFactory = new AuctionRunnerFactory(new DataAgentConfiguration(), codec, new ServiceDiscovery(this), this);
+    private final ClusteringAgentRunner clusteringAgentRunner = ClusteringAgentRunner.initializeClusteringAgentsContainerAndGetRunner();
+    private final AuctionRunnerFactory auctionRunnerFactory = new AuctionRunnerFactory(new DataAgentConfiguration(), codec, new ServiceDiscovery(this), this, clusteringAgentRunner);
     private AuctionRunner currentRunner;
 
     @Override

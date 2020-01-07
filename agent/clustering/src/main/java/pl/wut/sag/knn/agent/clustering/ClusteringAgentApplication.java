@@ -21,7 +21,6 @@ public class ClusteringAgentApplication {
 
         final AgentContainer container = manager.startChildContainer(startupInfo);
         final AgentController agentController = manager.startAgent(container, ClusteringAgent.class, "clustering-agent", new Object());
-
         log.info("Starting clustering agent");
 
     }

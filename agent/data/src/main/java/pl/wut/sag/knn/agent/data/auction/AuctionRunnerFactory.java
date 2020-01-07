@@ -2,6 +2,7 @@ package pl.wut.sag.knn.agent.data.auction;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import pl.wut.sag.knn.agent.data.ClusteringAgentRunner;
 import pl.wut.sag.knn.agent.data.config.DataAgentConfiguration;
 import pl.wut.sag.knn.infrastructure.MessageSender;
 import pl.wut.sag.knn.infrastructure.codec.Codec;
@@ -20,11 +21,12 @@ public class AuctionRunnerFactory {
     private final Codec codec;
     private final ServiceDiscovery serviceDiscovery;
     private final MessageSender messageSender;
+    private final ClusteringAgentRunner clusteringAgentRunner;
 
     public AuctionRunner newRunner(final UUID requestUuid, final Set<ObjectWithAttributes> objects) {
         final ArrayDeque<ObjectWithAttributes> queue = new ArrayDeque<>(objects);
         log.info("Creatng new auction runner with {} objects to process", objects.size());
 
-        return new DefaultAuctionRunner(requestUuid, codec, queue, serviceDiscovery, messageSender);
+        return new DefaultAuctionRunner(requestUuid, codec, queue, serviceDiscovery, messageSender, clusteringAgentRunner);
     }
 }

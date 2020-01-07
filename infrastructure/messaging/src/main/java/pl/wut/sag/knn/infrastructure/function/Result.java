@@ -25,6 +25,10 @@ public class Result<L, R> {
         return new Result<>(Objects.requireNonNull(left), null);
     }
 
+    public static <R> Result<Void, R> empty() {
+        return new Result<>(null, null);
+    }
+
     public static <L, R> Result<L, R> error(final R right) {
         return new Result<>(null, Objects.requireNonNull(right));
     }

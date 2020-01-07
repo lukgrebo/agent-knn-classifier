@@ -32,7 +32,7 @@ public class ClusteringAgentRunner {
     public Result<Void, StaleProxyException> runClusteringAgent() {
         try {
             manager.startAgent(container, ClusteringAgent.class, "clusteringAgent" + UUID.randomUUID(), new Object());
-            return Result.ok(null);
+            return Result.empty();
         } catch (final StaleProxyException e) {
             return Result.error(e);
         }

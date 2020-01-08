@@ -12,13 +12,14 @@ import java.util.List;
 public class MessageHandler extends CyclicBehaviour {
 
     private final List<IMessageSpecification> specifications;
+    private final List<IMessageSpecification> toAdd = new ArrayList<>();
 
     public MessageHandler(final IMessageSpecification... specifications) {
         this.specifications = new ArrayList<>(Arrays.asList(specifications));
     }
 
     public void add(final IMessageSpecification messageSpecification) {
-        specifications.add(messageSpecification);
+        toAdd.add(messageSpecification);
     }
 
     public void remove(final IMessageSpecification specification) {
@@ -27,6 +28,8 @@ public class MessageHandler extends CyclicBehaviour {
 
     @Override
     public void action() {
+        specifications.addAll(toAdd);
+        toAdd.clear();
         final ACLMessage message = myAgent.receive();
         if (message != null) {
             specifications.stream()

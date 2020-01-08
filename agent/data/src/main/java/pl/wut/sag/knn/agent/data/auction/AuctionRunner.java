@@ -7,13 +7,15 @@ import jade.lang.acl.ACLMessage;
 import jade.wrapper.StaleProxyException;
 import lombok.extern.slf4j.Slf4j;
 import pl.wut.sag.knn.agent.data.ClusteringAgentRunner;
+import pl.wut.sag.knn.agent.data.DataAgent;
 import pl.wut.sag.knn.agent.data.model.Auction;
 import pl.wut.sag.knn.agent.data.model.AuctionStatus;
-import pl.wut.sag.knn.infrastructure.MessageSender;
 import pl.wut.sag.knn.infrastructure.codec.Codec;
 import pl.wut.sag.knn.infrastructure.discovery.ServiceDiscovery;
 import pl.wut.sag.knn.infrastructure.function.Result;
+import pl.wut.sag.knn.infrastructure.message_handler.MessageSpecification;
 import pl.wut.sag.knn.ontology.auction.Bid;
+import pl.wut.sag.knn.ontology.auction.ClusterSummaryRequest;
 import pl.wut.sag.knn.ontology.object.ObjectWithAttributes;
 import pl.wut.sag.knn.protocol.auction.AuctionProtocol;
 
@@ -36,12 +38,12 @@ public interface AuctionRunner {
 @Slf4j
 class DefaultAuctionRunner implements AuctionRunner {
 
-    DefaultAuctionRunner(final UUID correspondingRequestUUID, final Codec codec, final Queue<ObjectWithAttributes> objectsToPropose, final ServiceDiscovery serviceDiscovery, final MessageSender messageSender, final ClusteringAgentRunner clusteringAgentRunner) {
+    DefaultAuctionRunner(final UUID correspondingRequestUUID, final Codec codec, final Queue<ObjectWithAttributes> objectsToPropose, final ServiceDiscovery serviceDiscovery, final DataAgent dataAgent, final ClusteringAgentRunner clusteringAgentRunner) {
         this.correspondingRequestUUID = correspondingRequestUUID;
         this.codec = codec;
         this.objectsToPropose = objectsToPropose;
         this.serviceDiscovery = serviceDiscovery;
-        this.messageSender = messageSender;
+        this.dataAgent = dataAgent;
         this.clusteringAgentRunner = clusteringAgentRunner;
         startNewAuction();
     }
@@ -51,7 +53,7 @@ class DefaultAuctionRunner implements AuctionRunner {
     private final Queue<ObjectWithAttributes> objectsToPropose;
     private Auction currentAuction;
     private final ServiceDiscovery serviceDiscovery;
-    private final MessageSender messageSender;
+    private final DataAgent dataAgent;
     private final ClusteringAgentRunner clusteringAgentRunner;
     private final Beliefs beliefs = new Beliefs();
 
@@ -90,8 +92,10 @@ class DefaultAuctionRunner implements AuctionRunner {
         } else {
             log.info("No new auction will be started. Auction ended.");
             log.info("Currently there are: " + findAllClusteringAgents().result().size() + " agents");
+            finalizeAll();
         }
     }
+
 
     private Result<List<DFAgentDescription>, FIPAException> findAllClusteringAgents() {
         return serviceDiscovery.findServices(AuctionProtocol.proposeObject.getTargetService());
@@ -117,7 +121,7 @@ class DefaultAuctionRunner implements AuctionRunner {
         final ACLMessage message = AuctionProtocol.proposeObject.templatedMessage();
         names.forEach(message::addReceiver);
         message.setContent(codec.encode(currentAuction.getObject()));
-        messageSender.send(message);
+        dataAgent.send(message);
 
         return null;
     }
@@ -132,7 +136,7 @@ class DefaultAuctionRunner implements AuctionRunner {
         message.addReceiver(aidBidEntry.getKey());
         log.info("Sending object to auction winner {}", aidBidEntry.getKey().getName());
         message.setContent(codec.encode(currentAuction.getObject()));
-        messageSender.send(message);
+        dataAgent.send(message);
     }
 
     private double getHighestBid() {
@@ -142,7 +146,25 @@ class DefaultAuctionRunner implements AuctionRunner {
                 .orElse(0D);
     }
 
+    private void finalizeAll() {
+        log.info("Starting finalization of all, sending requests to clustering agents");
+        final List<DFAgentDescription> result = serviceDiscovery.findServices(AuctionProtocol.requestSummary.getTargetService()).result();
+        log.info("Sending cluster summary request to {} agents", result.size());
+        final ACLMessage message = AuctionProtocol.requestSummary.templatedMessage();
+        message.setContent(codec.encode(ClusterSummaryRequest.ofRandomUUID()));
+        result.stream().map(DFAgentDescription::getName).forEach(message::addReceiver);
+        final AuctionStatisticsGatherer gatherer = AuctionStatisticsGatherer.defaultGatherer(result.size());
+        log.info("Registering response handler");
+        dataAgent.messageHandler.add(MessageSpecification.of(AuctionProtocol.summaryResponse.toMessageTemplate(), msg ->
+                gatherer.register(msg.getSender(), codec.decode(msg.getContent(), AuctionProtocol.summaryResponse.getMessageClass()).result())));
+
+        dataAgent.send(message);
+        log.info("Message send!");
+
+    }
+
     private class Beliefs {
+
 
         boolean shouldCreateNewAgent() {
             return allAgentsAlreadyBidded() && !highestOfferSatisfiesMinimalValue();

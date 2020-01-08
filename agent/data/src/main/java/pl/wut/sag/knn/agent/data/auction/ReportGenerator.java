@@ -10,6 +10,10 @@ import java.util.stream.Collectors;
 
 public interface ReportGenerator {
     void generate(final URL location, final Map<AID, Set<ObjectWithAttributes>> objectsByAgent);
+
+    static ReportGenerator stringToConsole() {
+        return new StringToConsoleReportGenerator();
+    }
 }
 
 

@@ -1,12 +1,10 @@
 package pl.wut.sag.knn.agent.data;
 
 import jade.core.Agent;
-import jade.core.behaviours.TickerBehaviour;
 import jade.lang.acl.ACLMessage;
 import lombok.extern.slf4j.Slf4j;
 import pl.wut.sag.knn.agent.data.auction.AuctionRunner;
 import pl.wut.sag.knn.agent.data.auction.AuctionRunnerFactory;
-import pl.wut.sag.knn.agent.data.auction.AuctionStatisticsGatherer;
 import pl.wut.sag.knn.agent.data.config.DataAgentConfiguration;
 import pl.wut.sag.knn.agent.data.loader.CsvObjectParser;
 import pl.wut.sag.knn.agent.data.loader.DataLoader;
@@ -45,7 +43,7 @@ public class DataAgent extends Agent implements MessageSender {
     private final ClusteringAgentRunner clusteringAgentRunner = ClusteringAgentRunner.initializeClusteringAgentsContainerAndGetRunner();
     private final AuctionRunnerFactory auctionRunnerFactory = new AuctionRunnerFactory(new DataAgentConfiguration(), codec, serviceDiscovery, this, clusteringAgentRunner);
     private AuctionRunner currentRunner;
-    final MessageHandler messageHandler = new MessageHandler(
+    public final MessageHandler messageHandler = new MessageHandler(
             MessageSpecification.of(MiningProtocol.sendRequest.toMessageTemplate(), this::startMining),
             MessageSpecification.of(AuctionProtocol.sendBid.toMessageTemplate(), this::handleBid),
             MessageSpecification.of(MiningProtocol.checkStatus.toMessageTemplate(), this::checkStatus)
@@ -81,17 +79,6 @@ public class DataAgent extends Agent implements MessageSender {
             log.info("Currently there is auction ongoing, add request to queue");
             miningRequests.add(request);
         }
-        addBehaviour(new TickerBehaviour(this, Duration.ofSeconds(3).toMillis()) {
-            @Override
-            protected void onTick() {
-                final AuctionStatus status = currentRunner.getAuctionStatus();
-                if (status.isFinished()) {
-                    log.info("Mining finished, preparing for loading statistics");
-                    AuctionStatisticsGatherer.defaultGatherer(status.getParticipants(), messageHandler, codec);
-                    removeBehaviour(this);
-                }
-            }
-        });
     }
 
     private void handleBid(final ACLMessage message) {

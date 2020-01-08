@@ -9,7 +9,7 @@ import java.util.function.Consumer;
 
 @Getter
 @RequiredArgsConstructor(staticName = "of")
-public class MessageSpecification {
+public class MessageSpecification implements IMessageSpecification {
     private final MessageTemplate templateToMatch;
     private final Consumer<ACLMessage> action;
 }

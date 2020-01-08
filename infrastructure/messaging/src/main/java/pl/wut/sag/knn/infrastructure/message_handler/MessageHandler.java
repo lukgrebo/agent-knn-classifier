@@ -30,6 +30,7 @@ public class MessageHandler extends CyclicBehaviour {
     public void action() {
         specifications.addAll(toAdd);
         toAdd.clear();
+
         final ACLMessage message = myAgent.receive();
         if (message != null) {
             specifications.stream()

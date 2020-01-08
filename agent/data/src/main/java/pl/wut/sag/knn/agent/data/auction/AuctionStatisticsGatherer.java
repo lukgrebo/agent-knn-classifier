@@ -5,8 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import pl.wut.sag.knn.ontology.auction.ClusterSummary;
 
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -16,6 +15,8 @@ public interface AuctionStatisticsGatherer {
     void register(AID agent, ClusterSummary summary);
 
     boolean isGatheringFinished();
+
+    Map<AID, Set<UUID>> getSummary();
 
     static AuctionStatisticsGatherer defaultGatherer(final int participants) {
         return new DefaultAuctionStatisticsGatherer(participants);
@@ -28,25 +29,21 @@ final class DefaultAuctionStatisticsGatherer implements AuctionStatisticsGathere
 
     private final int expectedAuctionParticipants;
     private Map<AID, Set<UUID>> objectsByAgent = new HashMap<>();
-    private final ReportGenerator reportGenerator = ReportGenerator.stringToConsole();
 
     @Override
     public void register(final AID agent, final ClusterSummary summary) {
         objectsByAgent.put(agent, summary.getObjectsIds());
         log.debug("Gatherer registered {} responses", objectsByAgent.size());
-
-        if (isGatheringFinished()) {
-            try {
-                reportGenerator.generate(new URL("https://www.google.com"), new HashMap<>()); //TODO
-            } catch (MalformedURLException e) {
-                throw new RuntimeException(e);
-            }
-        }
     }
 
     @Override
     public boolean isGatheringFinished() {
         return expectedAuctionParticipants == objectsByAgent.size();
+    }
+
+    @Override
+    public Map<AID, Set<UUID>> getSummary() {
+        return Collections.unmodifiableMap(objectsByAgent);
     }
 
 }

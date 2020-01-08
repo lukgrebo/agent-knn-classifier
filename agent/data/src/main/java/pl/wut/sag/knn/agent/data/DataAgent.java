@@ -6,6 +6,7 @@ import jade.lang.acl.ACLMessage;
 import lombok.extern.slf4j.Slf4j;
 import pl.wut.sag.knn.agent.data.auction.AuctionRunner;
 import pl.wut.sag.knn.agent.data.auction.AuctionRunnerFactory;
+import pl.wut.sag.knn.agent.data.auction.AuctionStatisticsGatherer;
 import pl.wut.sag.knn.agent.data.config.DataAgentConfiguration;
 import pl.wut.sag.knn.agent.data.loader.CsvObjectParser;
 import pl.wut.sag.knn.agent.data.loader.DataLoader;
@@ -40,8 +41,9 @@ public class DataAgent extends Agent implements MessageSender {
     private final Codec codec = Codec.json();
     private final CsvObjectParser csvObjectParser = new CsvObjectParser();
     private final Queue<MiningRequest> miningRequests = new ArrayDeque<>();
+    private final ServiceDiscovery serviceDiscovery = new ServiceDiscovery(this);
     private final ClusteringAgentRunner clusteringAgentRunner = ClusteringAgentRunner.initializeClusteringAgentsContainerAndGetRunner();
-    private final AuctionRunnerFactory auctionRunnerFactory = new AuctionRunnerFactory(new DataAgentConfiguration(), codec, new ServiceDiscovery(this), this, clusteringAgentRunner);
+    private final AuctionRunnerFactory auctionRunnerFactory = new AuctionRunnerFactory(new DataAgentConfiguration(), codec, serviceDiscovery, this, clusteringAgentRunner);
     private AuctionRunner currentRunner;
     final MessageHandler messageHandler = new MessageHandler(
             MessageSpecification.of(MiningProtocol.sendRequest.toMessageTemplate(), this::startMining),
@@ -85,8 +87,8 @@ public class DataAgent extends Agent implements MessageSender {
                 final AuctionStatus status = currentRunner.getAuctionStatus();
                 if (status.isFinished()) {
                     log.info("Mining finished, preparing for loading statistics");
+                    AuctionStatisticsGatherer.defaultGatherer(status.getParticipants(), messageHandler, codec);
                     removeBehaviour(this);
-
                 }
             }
         });

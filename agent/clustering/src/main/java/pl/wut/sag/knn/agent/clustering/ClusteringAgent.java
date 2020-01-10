@@ -34,6 +34,7 @@ public class ClusteringAgent extends Agent {
     private final Codec codec = Codec.json();
     private final BidCalculator bidCalculator = BidCalculator.calculator(distanceCalculator);
     private final ServiceDiscovery serviceDiscovery = new ServiceDiscovery(this);
+    boolean refinement;
 
     @Override
     protected void setup() {
@@ -64,9 +65,11 @@ public class ClusteringAgent extends Agent {
     }
 
     private void startRefinement(final ACLMessage request) {
+        log.info("{} Got request to start refinement!", getName());
         final Result<List<DFAgentDescription>, FIPAException> agents = serviceDiscovery.findServices(AuctionProtocol.proposeObject.getTargetService());
         final ObjectWithAttributes mostDistantElement = distanceCalculator.findMostDistantElement(managedCluster.viewElements());
 
+        refinement = true;
         final ACLMessage message = AuctionProtocol.proposeObject.templatedMessage();
         message.setContent(codec.encode(mostDistantElement));
         agents.result().stream().map(DFAgentDescription::getName).forEach(message::addReceiver);
@@ -75,6 +78,7 @@ public class ClusteringAgent extends Agent {
     }
 
     private void sendSummary(final ACLMessage message) {
+        log.info("{} Got summary request", getName());
         final ClusterSummary summary = new ClusterSummary(
                 managedCluster.getElements().stream().map(ObjectWithAttributes::getId).collect(Collectors.toSet()), distanceCalculator.calculateAverageDistaneInCluster(managedCluster.viewElements()));
         send(AuctionProtocol.summaryResponse.toResponse(message, codec.encode(summary)));

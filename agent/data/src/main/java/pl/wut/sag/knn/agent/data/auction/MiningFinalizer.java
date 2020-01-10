@@ -13,6 +13,7 @@ import pl.wut.sag.knn.infrastructure.discovery.ServiceDiscovery;
 import pl.wut.sag.knn.infrastructure.message_handler.IMessageSpecification;
 import pl.wut.sag.knn.infrastructure.message_handler.MessageSpecification;
 import pl.wut.sag.knn.ontology.auction.ClusterSummaryRequest;
+import pl.wut.sag.knn.ontology.auction.StartRefinementRequest;
 import pl.wut.sag.knn.ontology.object.ObjectWithAttributes;
 import pl.wut.sag.knn.protocol.auction.AuctionProtocol;
 
@@ -71,7 +72,12 @@ class DefaultMiningFinalizer implements MiningFinalizer {
                                     .collect(Collectors.toList());
                     reportGenerator.generate(miningUrl, clusterSummaryWithObjects);
 
-                    auctionState.startRefinement();
+                    final ACLMessage startRefinementMsg = AuctionProtocol.startRefinementRequest.templatedMessage();
+                    serviceDiscovery.findServices(AuctionProtocol.startRefinementRequest.getTargetService()).result().stream()
+                            .map(DFAgentDescription::getName)
+                            .forEach(startRefinementMsg::addReceiver);
+                    startRefinementMsg.setContent(codec.encode(new StartRefinementRequest(UUID.randomUUID())));
+
                     dataAgent.messageHandler.add(MessageSpecification.of(
                             AuctionProtocol.refinementFinishedResponse.toMessageTemplate(),
                             msage -> {
@@ -81,6 +87,8 @@ class DefaultMiningFinalizer implements MiningFinalizer {
                                 }
                             })
                     );
+                    auctionState.startRefinement();
+                    dataAgent.send(startRefinementMsg);
                 }
             }
 

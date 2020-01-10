@@ -6,6 +6,7 @@ import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.FIPAException;
 import lombok.RequiredArgsConstructor;
+import pl.wut.sag.knn.infrastructure.collection.CollectionUtil;
 import pl.wut.sag.knn.infrastructure.function.Result;
 
 import java.util.Arrays;
@@ -25,9 +26,10 @@ public class ServiceDiscovery {
 
     private Result<List<DFAgentDescription>, FIPAException> callYellowPagesService(final DFAgentDescription dfAgentDescription) {
         try {
-            final List<DFAgentDescription> agentIds = Arrays.stream(DFService.search(agent, dfAgentDescription))
+            final List<DFAgentDescription> result = Arrays.stream(DFService.search(agent, dfAgentDescription))
+                    .filter(CollectionUtil.distinctByKey(DFAgentDescription::getName))
                     .collect(Collectors.toList());
-            return Result.ok(agentIds);
+            return Result.ok(result);
         } catch (final FIPAException e) {
             return Result.error(e);
         }

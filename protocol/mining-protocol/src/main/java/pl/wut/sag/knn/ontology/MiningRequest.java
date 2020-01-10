@@ -15,4 +15,5 @@ public class MiningRequest {
     private UUID requestId;
     private URL miningUrl;
     private MiningRequestType type;
+    private double minimalBid;
 }

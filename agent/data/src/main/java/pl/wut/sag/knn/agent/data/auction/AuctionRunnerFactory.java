@@ -8,6 +8,7 @@ import pl.wut.sag.knn.agent.data.config.DataAgentConfiguration;
 import pl.wut.sag.knn.infrastructure.MessageSender;
 import pl.wut.sag.knn.infrastructure.codec.Codec;
 import pl.wut.sag.knn.infrastructure.discovery.ServiceDiscovery;
+import pl.wut.sag.knn.ontology.MiningRequest;
 import pl.wut.sag.knn.ontology.object.ObjectWithAttributes;
 
 import java.util.ArrayDeque;
@@ -24,10 +25,10 @@ public class AuctionRunnerFactory {
     private final DataAgent dataAgent;
     private final ClusteringAgentRunner clusteringAgentRunner;
 
-    public AuctionRunner newRunner(final UUID requestUuid, final Set<ObjectWithAttributes> objects) {
+    public AuctionRunner newRunner(final MiningRequest request, final Set<ObjectWithAttributes> objects) {
         final ArrayDeque<ObjectWithAttributes> queue = new ArrayDeque<>(objects);
         log.info("Creatng new auction runner with {} objects to process", objects.size());
 
-        return new DefaultAuctionRunner(requestUuid, codec, queue, serviceDiscovery, dataAgent, clusteringAgentRunner);
+        return new DefaultAuctionRunner(request, codec, queue, serviceDiscovery, dataAgent, clusteringAgentRunner);
     }
 }

@@ -46,7 +46,7 @@ public class UserAgent extends Agent implements UserAgentApiHandle {
             return "Nie znaleziono agenta danych gotowego zrealizować żądanie";
         }
         final pl.wut.sag.knn.ontology.MiningRequest request =
-                new pl.wut.sag.knn.ontology.MiningRequest(uuid, miningRequest.getMiningUrl(), MiningRequestType.URL);
+                new pl.wut.sag.knn.ontology.MiningRequest(uuid, miningRequest.getMiningUrl(), MiningRequestType.URL, miningRequest.getMinimalBid());
 
         final ACLMessage message = MiningProtocol.sendRequest.templatedMessage();
         message.addReceiver(agentDescription.get().getName());

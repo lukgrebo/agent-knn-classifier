@@ -13,6 +13,7 @@ import pl.wut.sag.knn.agent.data.model.AuctionStatus;
 import pl.wut.sag.knn.infrastructure.codec.Codec;
 import pl.wut.sag.knn.infrastructure.discovery.ServiceDiscovery;
 import pl.wut.sag.knn.infrastructure.function.Result;
+import pl.wut.sag.knn.ontology.MiningRequest;
 import pl.wut.sag.knn.ontology.auction.Bid;
 import pl.wut.sag.knn.ontology.object.ObjectWithAttributes;
 import pl.wut.sag.knn.protocol.auction.AuctionProtocol;
@@ -23,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
-import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -37,8 +37,8 @@ public interface AuctionRunner {
 @Slf4j
 class DefaultAuctionRunner implements AuctionRunner {
 
-    DefaultAuctionRunner(final UUID correspondingRequestUUID, final Codec codec, final Queue<ObjectWithAttributes> objectsToPropose, final ServiceDiscovery serviceDiscovery, final DataAgent dataAgent, final ClusteringAgentRunner clusteringAgentRunner) {
-        this.correspondingRequestUUID = correspondingRequestUUID;
+    DefaultAuctionRunner(final MiningRequest request, final Codec codec, final Queue<ObjectWithAttributes> objectsToPropose, final ServiceDiscovery serviceDiscovery, final DataAgent dataAgent, final ClusteringAgentRunner clusteringAgentRunner) {
+        this.request = request;
         this.codec = codec;
         this.objectsToPropose = objectsToPropose;
         this.serviceDiscovery = serviceDiscovery;
@@ -48,7 +48,7 @@ class DefaultAuctionRunner implements AuctionRunner {
         startNewAuction();
     }
 
-    private final UUID correspondingRequestUUID;
+    private final MiningRequest request;
     private final Codec codec;
     private final Queue<ObjectWithAttributes> objectsToPropose;
     private Auction currentAuction;
@@ -107,7 +107,7 @@ class DefaultAuctionRunner implements AuctionRunner {
         final Result<List<DFAgentDescription>, FIPAException> allServices = findAllClusteringAgents();
 
         final int bidders = allServices.result().size();
-        return new AuctionStatus(correspondingRequestUUID, bidders, objectsToPropose.size(), objectsToPropose.isEmpty());
+        return new AuctionStatus(request.getRequestId(), bidders, objectsToPropose.size(), objectsToPropose.isEmpty());
     }
 
     private Void proposeCurrentObject() {
@@ -150,7 +150,6 @@ class DefaultAuctionRunner implements AuctionRunner {
 
     private class Beliefs {
 
-
         boolean shouldCreateNewAgent() {
             return allAgentsAlreadyBidded() && !highestOfferSatisfiesMinimalValue();
         }
@@ -160,7 +159,7 @@ class DefaultAuctionRunner implements AuctionRunner {
         }
 
         private boolean highestOfferSatisfiesMinimalValue() {
-            return getHighestBid() >= 1.00;
+            return getHighestBid() >= request.getMinimalBid();
         }
 
         boolean allAgentsAlreadyBidded() {

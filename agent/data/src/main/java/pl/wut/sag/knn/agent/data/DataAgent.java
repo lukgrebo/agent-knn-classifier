@@ -74,7 +74,7 @@ public class DataAgent extends Agent implements MessageSender {
         if (currentRunner == null) {
             log.info("Could not parse {}", parsedEntries.stream().filter(Result::isError).collect(Collectors.toList()).size());
             final Set<ObjectWithAttributes> objects = parsedEntries.stream().filter(Result::isValid).map(Result::result).collect(Collectors.toSet());
-            currentRunner = auctionRunnerFactory.newRunner(request.getRequestId(), objects);
+            currentRunner = auctionRunnerFactory.newRunner(request, objects);
         } else {
             log.info("Currently there is auction ongoing, add request to queue");
             miningRequests.add(request);

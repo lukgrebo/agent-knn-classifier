@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 @ToString
@@ -44,5 +46,19 @@ public final class ObjectWithAttributes {
 
     public static ObjectWithAttributes of(final Map<Integer, String> attributesAndValues) {
         return new ObjectWithAttributes(UUID.randomUUID(), attributesAndValues);
+    }
+
+    public String humanReadableString() {
+        return String.format("{%s(%s)}", id, humanFormattedAttributes());
+    }
+
+    private String humanFormattedAttributes() {
+        final Integer maxIndex = attributesAndValues.keySet().stream().max(Integer::compareTo).orElse(0);
+
+        return IntStream.rangeClosed(0, maxIndex)
+                .mapToObj(attributesAndValues::get)
+                .map(Optional::ofNullable)
+                .map(o -> o.orElse(" "))
+                .collect(Collectors.joining(","));
     }
 }

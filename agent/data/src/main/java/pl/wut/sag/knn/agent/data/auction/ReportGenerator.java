@@ -30,7 +30,7 @@ class StringToConsoleReportGenerator implements ReportGenerator {
 
     private void writeAgentSummary(final StringBuilder stringBuilder, final AID aid, final Set<ObjectWithAttributes> objects) {
         stringBuilder.append("Agent ").append(aid.getName()).append("\n")
-                .append("Obiekty: [").append(objects.stream().map(ObjectWithAttributes::toString).collect(Collectors.joining(","))).append("]").append("\n");
+                .append("Obiekty: [").append(objects.stream().map(ObjectWithAttributes::humanReadableString).collect(Collectors.joining(","))).append("]").append("\n");
     }
 }
 

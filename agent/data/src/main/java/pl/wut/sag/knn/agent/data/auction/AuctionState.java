@@ -7,7 +7,9 @@ import pl.wut.sag.knn.ontology.auction.ClusterSummary;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public interface AuctionState {
     void register(AID agent, ClusterSummary summary);
@@ -20,7 +22,7 @@ public interface AuctionState {
 
     boolean isRefinementDone();
 
-    void finishRefinement();
+    void refinementFinished(final AID aid);
 
     Map<AID, ClusterSummary> getSummary();
 
@@ -35,8 +37,8 @@ final class DefaultAuctionState implements AuctionState {
 
     private final int expectedAuctionParticipants;
     private Map<AID, ClusterSummary> summaryByAgent = new HashMap<>();
-    boolean refinementStarted = false;
-    private boolean refinementDone;
+    private final Set<AID> refinementFinished = new HashSet<>();
+    boolean refinementStarted;
 
     @Override
     public void register(final AID agent, final ClusterSummary summary) {
@@ -61,12 +63,12 @@ final class DefaultAuctionState implements AuctionState {
 
     @Override
     public boolean isRefinementDone() {
-        return refinementDone;
+        return refinementFinished.size() == expectedAuctionParticipants;
     }
 
     @Override
-    public void finishRefinement() {
-        this.refinementDone = true;
+    public void refinementFinished(final AID aid) {
+        refinementFinished.add(aid);
     }
 
     @Override

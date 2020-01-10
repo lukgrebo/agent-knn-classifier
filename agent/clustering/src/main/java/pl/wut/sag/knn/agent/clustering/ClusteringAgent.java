@@ -78,9 +78,9 @@ public class ClusteringAgent extends Agent {
         final ClusterSummary summary = new ClusterSummary(
                 managedCluster.getElements().stream().map(ObjectWithAttributes::getId).collect(Collectors.toSet()), distanceCalculator.calculateAverageDistaneInCluster(managedCluster.viewElements()));
         send(AuctionProtocol.summaryResponse.toResponse(message, codec.encode(summary)));
-        ServiceRegistration.deregister(this);
-        this.doDelete();
-        this.takeDown();
+//        ServiceRegistration.deregister(this);
+//        this.doDelete();
+//        this.takeDown();
     }
 
     private void bidRequested(final ACLMessage aclMessage) {

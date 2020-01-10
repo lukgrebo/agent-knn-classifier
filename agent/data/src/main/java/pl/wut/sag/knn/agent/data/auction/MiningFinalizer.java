@@ -2,6 +2,7 @@ package pl.wut.sag.knn.agent.data.auction;
 
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.lang.acl.ACLMessage;
+import jade.lang.acl.MessageTemplate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import pl.wut.sag.knn.agent.data.DataAgent;
@@ -9,6 +10,7 @@ import pl.wut.sag.knn.agent.data.model.ClusterSummaryWithObjects;
 import pl.wut.sag.knn.infrastructure.codec.Codec;
 import pl.wut.sag.knn.infrastructure.collection.CollectionUtil;
 import pl.wut.sag.knn.infrastructure.discovery.ServiceDiscovery;
+import pl.wut.sag.knn.infrastructure.message_handler.IMessageSpecification;
 import pl.wut.sag.knn.infrastructure.message_handler.MessageSpecification;
 import pl.wut.sag.knn.ontology.auction.ClusterSummaryRequest;
 import pl.wut.sag.knn.ontology.object.ObjectWithAttributes;
@@ -47,25 +49,45 @@ class DefaultMiningFinalizer implements MiningFinalizer {
         final ACLMessage message = AuctionProtocol.requestSummary.templatedMessage();
         message.setContent(codec.encode(ClusterSummaryRequest.ofRandomUUID()));
         result.stream().map(DFAgentDescription::getName).forEach(message::addReceiver);
-        final AuctionState gatherer = AuctionState.newState(result.size());
+
         log.info("Registering response handler");
-        dataAgent.messageHandler.add(MessageSpecification.of(AuctionProtocol.summaryResponse.toMessageTemplate(), msg -> this.handleMessage(msg, gatherer)));
+        dataAgent.messageHandler.add(new IMessageSpecification() {
+            final AuctionState auctionState = AuctionState.newState(result.size());
+
+            @Override
+            public MessageTemplate getTemplateToMatch() {
+                return AuctionProtocol.summaryResponse.toMessageTemplate();
+            }
+
+            @Override
+            public void processMessage(final ACLMessage msg) {
+                auctionState.register(msg.getSender(), codec.decode(msg.getContent(), AuctionProtocol.summaryResponse.getMessageClass()).result());
+                if (auctionState.isGatheringFinished() && !auctionState.isRefinementStarted()) {
+                    final List<ClusterSummaryWithObjects> clusterSummaryWithObjects =
+                            auctionState.getSummary().entrySet().stream()
+                                    .map(e -> new ClusterSummaryWithObjects(e.getKey(),
+                                            e.getValue().getAverageDistance(),
+                                            CollectionUtil.mapToSet(e.getValue().getObjectsIds(), allObjects::get)))
+                                    .collect(Collectors.toList());
+                    reportGenerator.generate(miningUrl, clusterSummaryWithObjects);
+
+                    auctionState.startRefinement();
+                    dataAgent.messageHandler.add(MessageSpecification.of(
+                            AuctionProtocol.refinementFinishedResponse.toMessageTemplate(),
+                            msage -> {
+                                auctionState.refinementFinished(msage.getSender());
+                                if (auctionState.isRefinementDone()) {
+                                    log.info("REFINEMENT IS DONE");
+                                }
+                            })
+                    );
+                }
+            }
+
+        });
 
         dataAgent.send(message);
         log.info("Message send!");
     }
 
-    private void handleMessage(final ACLMessage msg, final AuctionState gatherer) {
-        gatherer.register(msg.getSender(), codec.decode(msg.getContent(), AuctionProtocol.summaryResponse.getMessageClass()).result());
-        if (gatherer.isGatheringFinished()) {
-            final List<ClusterSummaryWithObjects> clusterSummaryWithObjects =
-                    gatherer.getSummary().entrySet().stream()
-                            .map(e -> new ClusterSummaryWithObjects(e.getKey(),
-                                    e.getValue().getAverageDistance(),
-                                    CollectionUtil.mapToSet(e.getValue().getObjectsIds(), allObjects::get)))
-                            .collect(Collectors.toList());
-            reportGenerator.generate(miningUrl, clusterSummaryWithObjects);
-        }
-
-    }
 }

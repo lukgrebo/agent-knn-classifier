@@ -8,5 +8,9 @@ import java.util.function.Consumer;
 public interface IMessageSpecification {
     MessageTemplate getTemplateToMatch();
 
-    Consumer<ACLMessage> getAction();
+    void processMessage(final ACLMessage message);
+
+    default Consumer<ACLMessage> getAction() {
+        return message -> processMessage(message);
+    }
 }

@@ -12,4 +12,9 @@ import java.util.function.Consumer;
 public class MessageSpecification implements IMessageSpecification {
     private final MessageTemplate templateToMatch;
     private final Consumer<ACLMessage> action;
+
+    @Override
+    public void processMessage(final ACLMessage message) {
+        action.accept(message);
+    }
 }

@@ -1,6 +1,5 @@
 package pl.wut.sag.knn.agent.data.auction;
 
-import jade.core.AID;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.lang.acl.ACLMessage;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +17,6 @@ import pl.wut.sag.knn.protocol.auction.AuctionProtocol;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -49,7 +47,7 @@ class DefaultMiningFinalizer implements MiningFinalizer {
         final ACLMessage message = AuctionProtocol.requestSummary.templatedMessage();
         message.setContent(codec.encode(ClusterSummaryRequest.ofRandomUUID()));
         result.stream().map(DFAgentDescription::getName).forEach(message::addReceiver);
-        final AuctionStatisticsGatherer gatherer = AuctionStatisticsGatherer.defaultGatherer(result.size());
+        final AuctionState gatherer = AuctionState.newState(result.size());
         log.info("Registering response handler");
         dataAgent.messageHandler.add(MessageSpecification.of(AuctionProtocol.summaryResponse.toMessageTemplate(), msg -> this.handleMessage(msg, gatherer)));
 
@@ -57,17 +55,17 @@ class DefaultMiningFinalizer implements MiningFinalizer {
         log.info("Message send!");
     }
 
-    private void handleMessage(final ACLMessage msg, final AuctionStatisticsGatherer gatherer) {
+    private void handleMessage(final ACLMessage msg, final AuctionState gatherer) {
         gatherer.register(msg.getSender(), codec.decode(msg.getContent(), AuctionProtocol.summaryResponse.getMessageClass()).result());
         if (gatherer.isGatheringFinished()) {
             final List<ClusterSummaryWithObjects> clusterSummaryWithObjects =
                     gatherer.getSummary().entrySet().stream()
-                    .map(e -> new ClusterSummaryWithObjects(e.getKey(),
-                            e.getValue().getAverageDistance(),
-                            CollectionUtil.mapToSet(e.getValue().getObjectsIds(), allObjects::get)))
-                    .collect(Collectors.toList());
+                            .map(e -> new ClusterSummaryWithObjects(e.getKey(),
+                                    e.getValue().getAverageDistance(),
+                                    CollectionUtil.mapToSet(e.getValue().getObjectsIds(), allObjects::get)))
+                            .collect(Collectors.toList());
             reportGenerator.generate(miningUrl, clusterSummaryWithObjects);
-            dataAgent.finishAuction();
         }
+
     }
 }

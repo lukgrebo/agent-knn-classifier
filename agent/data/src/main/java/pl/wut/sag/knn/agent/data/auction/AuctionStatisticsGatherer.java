@@ -8,15 +8,13 @@ import pl.wut.sag.knn.ontology.auction.ClusterSummary;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
 
 public interface AuctionStatisticsGatherer {
     void register(AID agent, ClusterSummary summary);
 
     boolean isGatheringFinished();
 
-    Map<AID, Set<UUID>> getSummary();
+    Map<AID, ClusterSummary> getSummary();
 
     static AuctionStatisticsGatherer defaultGatherer(final int participants) {
         return new DefaultAuctionStatisticsGatherer(participants);
@@ -28,22 +26,22 @@ public interface AuctionStatisticsGatherer {
 final class DefaultAuctionStatisticsGatherer implements AuctionStatisticsGatherer {
 
     private final int expectedAuctionParticipants;
-    private Map<AID, Set<UUID>> objectsByAgent = new HashMap<>();
+    private Map<AID, ClusterSummary> summaryByAgent = new HashMap<>();
 
     @Override
     public void register(final AID agent, final ClusterSummary summary) {
-        objectsByAgent.put(agent, summary.getObjectsIds());
-        log.debug("Gatherer registered {} responses", objectsByAgent.size());
+        summaryByAgent.put(agent, summary);
+        log.debug("Gatherer registered {} responses", summaryByAgent.size());
     }
 
     @Override
     public boolean isGatheringFinished() {
-        return expectedAuctionParticipants == objectsByAgent.size();
+        return expectedAuctionParticipants == summaryByAgent.size();
     }
 
     @Override
-    public Map<AID, Set<UUID>> getSummary() {
-        return Collections.unmodifiableMap(objectsByAgent);
+    public Map<AID, ClusterSummary> getSummary() {
+        return Collections.unmodifiableMap(summaryByAgent);
     }
 
 }

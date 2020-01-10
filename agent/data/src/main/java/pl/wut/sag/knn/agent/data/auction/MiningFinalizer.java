@@ -6,6 +6,7 @@ import jade.lang.acl.ACLMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import pl.wut.sag.knn.agent.data.DataAgent;
+import pl.wut.sag.knn.agent.data.model.ClusterSummaryWithObjects;
 import pl.wut.sag.knn.infrastructure.codec.Codec;
 import pl.wut.sag.knn.infrastructure.collection.CollectionUtil;
 import pl.wut.sag.knn.infrastructure.discovery.ServiceDiscovery;
@@ -59,9 +60,13 @@ class DefaultMiningFinalizer implements MiningFinalizer {
     private void handleMessage(final ACLMessage msg, final AuctionStatisticsGatherer gatherer) {
         gatherer.register(msg.getSender(), codec.decode(msg.getContent(), AuctionProtocol.summaryResponse.getMessageClass()).result());
         if (gatherer.isGatheringFinished()) {
-            final Map<AID, Set<ObjectWithAttributes>> objectsByAgent = gatherer.getSummary().entrySet().stream()
-                    .collect(Collectors.toMap(Map.Entry::getKey, e -> CollectionUtil.mapToSet(e.getValue(), allObjects::get)));
-            reportGenerator.generate(miningUrl, objectsByAgent);
+            final List<ClusterSummaryWithObjects> clusterSummaryWithObjects =
+                    gatherer.getSummary().entrySet().stream()
+                    .map(e -> new ClusterSummaryWithObjects(e.getKey(),
+                            e.getValue().getAverageDistance(),
+                            CollectionUtil.mapToSet(e.getValue().getObjectsIds(), allObjects::get)))
+                    .collect(Collectors.toList());
+            reportGenerator.generate(miningUrl, clusterSummaryWithObjects);
             dataAgent.finishAuction();
         }
     }

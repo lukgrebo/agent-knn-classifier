@@ -6,7 +6,6 @@ import lombok.extern.slf4j.Slf4j;
 import pl.wut.sag.knn.agent.clustering.algorithm.DistanceCalculator;
 import pl.wut.sag.knn.agent.clustering.algorithm.EuclideanDistanceCalculator;
 import pl.wut.sag.knn.infrastructure.codec.Codec;
-import pl.wut.sag.knn.infrastructure.collection.ImmutableList;
 import pl.wut.sag.knn.infrastructure.discovery.ServiceRegistration;
 import pl.wut.sag.knn.infrastructure.message_handler.MessageHandler;
 import pl.wut.sag.knn.infrastructure.message_handler.MessageSpecification;
@@ -41,7 +40,6 @@ public class ClusteringAgent extends Agent {
         final ClusterSummary summary = new ClusterSummary(
                 managedCluster.getElements().stream().map(ObjectWithAttributes::getId).collect(Collectors.toSet()),
                 distanceCalculator.calculateAverageDistaneInCluster(managedCluster.viewElements()));
-
         send(AuctionProtocol.summaryResponse.toResponse(message, codec.encode(summary)));
         ServiceRegistration.deregister(this);
         this.doDelete();

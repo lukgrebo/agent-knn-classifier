@@ -6,6 +6,8 @@ import lombok.NoArgsConstructor;
 import pl.wut.sag.knn.ontology.auction.Bid;
 import pl.wut.sag.knn.ontology.auction.ClusterSummary;
 import pl.wut.sag.knn.ontology.auction.ClusterSummaryRequest;
+import pl.wut.sag.knn.ontology.auction.RefinementSummary;
+import pl.wut.sag.knn.ontology.auction.StartRefinementRequest;
 import pl.wut.sag.knn.ontology.object.ObjectWithAttributes;
 import pl.wut.sag.knn.protocol.Protocol;
 import pl.wut.sag.knn.protocol.ProtocolStep;
@@ -50,6 +52,25 @@ public class AuctionProtocol extends Protocol {
                     .protocol(instance)
                     .messageClass(ObjectWithAttributes.class)
                     .stepName("Accept bid and send object")
+                    .build();
+
+    public static final TargetedStep<AuctionProtocol, StartRefinementRequest> startRefinementRequest =
+            TargetedStep.<AuctionProtocol, StartRefinementRequest>targetedBuilder()
+                    .performative(ACLMessage.REQUEST)
+                    .required(false)
+                    .protocol(instance)
+                    .messageClass(StartRefinementRequest.class)
+                    .stepName("Start refinement")
+                    .targetService(ServiceDescriptionFactory.name("refinement-capable"))
+                    .build();
+
+    public static final ResponseStep<AuctionProtocol, RefinementSummary> refinementFinishedResponse =
+            ResponseStep.<AuctionProtocol, RefinementSummary>responseStepBuilder()
+                    .performative(ACLMessage.INFORM)
+                    .required(false)
+                    .protocol(instance)
+                    .messageClass(RefinementSummary.class)
+                    .stepName("Inform of finished refinement")
                     .build();
 
     public static final TargetedStep<AuctionProtocol, ClusterSummaryRequest> requestSummary =

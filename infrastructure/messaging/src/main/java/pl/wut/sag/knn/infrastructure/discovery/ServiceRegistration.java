@@ -8,6 +8,7 @@ import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.FIPAException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import pl.wut.sag.knn.infrastructure.function.Result;
 
 import java.time.Duration;
 import java.util.Arrays;
@@ -43,6 +44,15 @@ public class ServiceRegistration {
                     registerRetryOnFailure(agent, retryInterval, serviceDescriptions);
                 }
             });
+        }
+    }
+
+    public static Result<Void, FIPAException> deregister(final Agent agent) {
+        try {
+            DFService.deregister(agent);
+            return Result.empty();
+        } catch (FIPAException e) {
+            return Result.error(e);
         }
     }
 }

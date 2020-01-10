@@ -60,7 +60,10 @@ public class DataAgent extends Agent implements MessageSender {
     private void startMining(final ACLMessage message) {
         final MiningRequest request = codec.decode(message.getContent(), MiningProtocol.sendRequest.getMessageClass()).result();
         log.info("Got mining request", request);
+        processMiningRequest(request);
+    }
 
+    private void processMiningRequest(final MiningRequest request) {
         final DataLoader dataLoader = DataLoader.defaultLoader();
         final Result<List<String>, IOException> result = dataLoader.getData(request.getMiningUrl());
         if (result.isError()) {
@@ -104,6 +107,13 @@ public class DataAgent extends Agent implements MessageSender {
             } else {
                 sendStatusResponse(message, new MiningStatus(0, "Nic nam nie wiadomo o takim zapytaniu"));
             }
+        }
+    }
+
+    public void finishAuction() {
+        this.currentRunner = null;
+        if (!miningRequests.isEmpty()) {
+            processMiningRequest(miningRequests.poll());
         }
     }
 

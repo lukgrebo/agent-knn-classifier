@@ -14,7 +14,6 @@ import pl.wut.sag.knn.ontology.auction.ClusterSummaryRequest;
 import pl.wut.sag.knn.ontology.object.ObjectWithAttributes;
 import pl.wut.sag.knn.protocol.auction.AuctionProtocol;
 
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
@@ -25,8 +24,8 @@ import java.util.stream.Collectors;
 public interface MiningFinalizer {
     void finalizeMining();
 
-    static DefaultMiningFinalizer finalizer(final ServiceDiscovery serviceDiscovery, final DataAgent dataAgent, final Codec codec, Map<UUID, ObjectWithAttributes> allObjects) {
-        return new DefaultMiningFinalizer(serviceDiscovery, dataAgent, codec, allObjects);
+    static DefaultMiningFinalizer finalizer(final URL miningUrl, final ServiceDiscovery serviceDiscovery, final DataAgent dataAgent, final Codec codec, Map<UUID, ObjectWithAttributes> allObjects) {
+        return new DefaultMiningFinalizer(miningUrl, serviceDiscovery, dataAgent, codec, allObjects);
     }
 }
 
@@ -34,6 +33,7 @@ public interface MiningFinalizer {
 @RequiredArgsConstructor
 class DefaultMiningFinalizer implements MiningFinalizer {
 
+    private final URL miningUrl;
     private final ServiceDiscovery serviceDiscovery;
     private final DataAgent dataAgent;
     private final Codec codec;
@@ -61,11 +61,8 @@ class DefaultMiningFinalizer implements MiningFinalizer {
         if (gatherer.isGatheringFinished()) {
             final Map<AID, Set<ObjectWithAttributes>> objectsByAgent = gatherer.getSummary().entrySet().stream()
                     .collect(Collectors.toMap(Map.Entry::getKey, e -> CollectionUtil.mapToSet(e.getValue(), allObjects::get)));
-            try {
-                reportGenerator.generate(new URL("http://www.google.com"), objectsByAgent);
-            } catch (final MalformedURLException e) {
-                throw new RuntimeException(e);
-            }
+            reportGenerator.generate(miningUrl, objectsByAgent);
+            dataAgent.finishAuction();
         }
     }
 }

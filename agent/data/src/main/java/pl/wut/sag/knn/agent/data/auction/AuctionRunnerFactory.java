@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import pl.wut.sag.knn.agent.data.ClusteringAgentRunner;
 import pl.wut.sag.knn.agent.data.DataAgent;
 import pl.wut.sag.knn.agent.data.config.DataAgentConfiguration;
-import pl.wut.sag.knn.infrastructure.MessageSender;
 import pl.wut.sag.knn.infrastructure.codec.Codec;
 import pl.wut.sag.knn.infrastructure.discovery.ServiceDiscovery;
 import pl.wut.sag.knn.ontology.MiningRequest;
@@ -13,7 +12,6 @@ import pl.wut.sag.knn.ontology.object.ObjectWithAttributes;
 
 import java.util.ArrayDeque;
 import java.util.Set;
-import java.util.UUID;
 
 @Slf4j
 @RequiredArgsConstructor

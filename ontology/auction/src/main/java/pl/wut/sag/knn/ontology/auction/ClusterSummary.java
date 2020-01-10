@@ -12,4 +12,5 @@ import java.util.UUID;
 @AllArgsConstructor
 public class ClusterSummary {
     private Set<UUID> objectsIds;
+    private double averageDistance;
 }

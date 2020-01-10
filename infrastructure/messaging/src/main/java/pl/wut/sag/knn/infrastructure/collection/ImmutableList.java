@@ -20,6 +20,9 @@ public class ImmutableList<T> implements ImmutableCollection<T> {
         this.size = this.internalList.size();
     }
 
+    public T get(final int index) {
+        return internalList.get(index);
+    }
 
     @Override
     public boolean contains(final Object o) {

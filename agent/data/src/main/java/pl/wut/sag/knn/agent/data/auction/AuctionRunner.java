@@ -44,7 +44,7 @@ class DefaultAuctionRunner implements AuctionRunner {
         this.serviceDiscovery = serviceDiscovery;
         this.dataAgent = dataAgent;
         this.clusteringAgentRunner = clusteringAgentRunner;
-        this.finalizer = MiningFinalizer.finalizer(serviceDiscovery, dataAgent, codec, objectsToPropose.stream().collect(Collectors.toMap(ObjectWithAttributes::getId, Function.identity())));
+        this.finalizer = MiningFinalizer.finalizer(request.getMiningUrl(), serviceDiscovery, dataAgent, codec, objectsToPropose.stream().collect(Collectors.toMap(ObjectWithAttributes::getId, Function.identity())));
         startNewAuction();
     }
 
@@ -70,18 +70,23 @@ class DefaultAuctionRunner implements AuctionRunner {
             finalize(currentAuction);
             startNewAuction();
         } else if (beliefs.shouldCreateNewAgent()) {
-            final int currentAgentNumber = findAllClusteringAgents().result().size();
-            final Result<Void, StaleProxyException> result = clusteringAgentRunner.runClusteringAgent();
-            Result<Boolean, FIPAException> agentRegisteredCheck = findAllClusteringAgents().mapResult(l -> l.size() > currentAgentNumber);
-            while (!(agentRegisteredCheck.isValid() && agentRegisteredCheck.result())) {
-                agentRegisteredCheck = findAllClusteringAgents().mapResult(l -> l.size() > currentAgentNumber);
-            }
+            final Result<Void, StaleProxyException> result = runNewAgent();
             log.info("Highest bid unsatisfactory {}, creating new agent {}: ", getHighestBid(), result);
             proposeCurrentObject();
         } else {
             log.info("Waiting for other bids, got {} bids", currentAuction.getBids().size());
         }
 
+    }
+
+    private Result<Void, StaleProxyException> runNewAgent() {
+        final int currentAgentNumber = findAllClusteringAgents().result().size();
+        final Result<Void, StaleProxyException> result = clusteringAgentRunner.runClusteringAgent();
+        Result<Boolean, FIPAException> agentRegisteredCheck = findAllClusteringAgents().mapResult(l -> l.size() > currentAgentNumber);
+        while (!(agentRegisteredCheck.isValid() && agentRegisteredCheck.result())) {
+            agentRegisteredCheck = findAllClusteringAgents().mapResult(l -> l.size() > currentAgentNumber);
+        }
+        return result;
     }
 
     private void startNewAuction() {
@@ -111,11 +116,13 @@ class DefaultAuctionRunner implements AuctionRunner {
     }
 
     private Void proposeCurrentObject() {
-        final Result<List<DFAgentDescription>, FIPAException> clusters = findAllClusteringAgents();
+        Result<List<DFAgentDescription>, FIPAException> clusters = findAllClusteringAgents();
         if (clusters.isError()) {
             log.error("Error occured during current object proposal: " + clusters.error());
         } else if (clusters.result().isEmpty()) {
+            runNewAgent();
             log.error("No clustering agents found!!!");
+            clusters = findAllClusteringAgents();
         }
         final List<AID> names = clusters.result().stream().map(DFAgentDescription::getName).collect(Collectors.toList());
         log.info("Sending CFP for current object {} to {} clusters", currentAuction.getObject().getId(), names.size());
@@ -151,7 +158,7 @@ class DefaultAuctionRunner implements AuctionRunner {
     private class Beliefs {
 
         boolean shouldCreateNewAgent() {
-            return allAgentsAlreadyBidded() && !highestOfferSatisfiesMinimalValue();
+            return noAgentsFound() || (allAgentsAlreadyBidded() && !highestOfferSatisfiesMinimalValue());
         }
 
         boolean shouldFinalizeAuction() {
@@ -162,12 +169,15 @@ class DefaultAuctionRunner implements AuctionRunner {
             return getHighestBid() >= request.getMinimalBid();
         }
 
+        boolean noAgentsFound() {
+            return serviceDiscovery.findServices(AuctionProtocol.proposeObject.getTargetService()).result().isEmpty();
+        }
+
         boolean allAgentsAlreadyBidded() {
             final List<AID> alreadyBidded = new ArrayList<>(currentAuction.getBids().keySet());
 
             final Result<List<AID>, FIPAException> cluteringAgentSearchResult = serviceDiscovery.findServices(AuctionProtocol.proposeObject.getTargetService())
                     .mapResult(a -> a.stream().map(DFAgentDescription::getName).collect(Collectors.toList()));
-            log.debug("Found {} agents and {} bids", cluteringAgentSearchResult.result().size(), alreadyBidded.size());
 
             return cluteringAgentSearchResult.isValid() && alreadyBidded.containsAll(cluteringAgentSearchResult.result());
         }

@@ -1,6 +1,7 @@
 package pl.wut.sag.knn.agent.clustering.algorithm;
 
 import lombok.RequiredArgsConstructor;
+import pl.wut.sag.knn.infrastructure.collection.ImmutableList;
 import pl.wut.sag.knn.infrastructure.function.Result;
 import pl.wut.sag.knn.infrastructure.parser.DoubleParser;
 import pl.wut.sag.knn.infrastructure.parser.ParseError;

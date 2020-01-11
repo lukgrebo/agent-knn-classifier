@@ -11,4 +11,5 @@ import java.util.UUID;
 @AllArgsConstructor
 public class StartRefinementRequest {
     private UUID auctionId;
+    private int refinementSize;
 }

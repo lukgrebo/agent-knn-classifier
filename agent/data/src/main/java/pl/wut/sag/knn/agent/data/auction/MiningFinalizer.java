@@ -13,13 +13,13 @@ import pl.wut.sag.knn.infrastructure.collection.CollectionUtil;
 import pl.wut.sag.knn.infrastructure.discovery.ServiceDiscovery;
 import pl.wut.sag.knn.infrastructure.message_handler.IMessageSpecification;
 import pl.wut.sag.knn.infrastructure.message_handler.WaitUntilAllRespondedMessageSpecification;
+import pl.wut.sag.knn.ontology.MiningRequest;
 import pl.wut.sag.knn.ontology.auction.ClusterSummaryRequest;
 import pl.wut.sag.knn.ontology.auction.RefinementSummary;
 import pl.wut.sag.knn.ontology.auction.StartRefinementRequest;
 import pl.wut.sag.knn.ontology.object.ObjectWithAttributes;
 import pl.wut.sag.knn.protocol.auction.AuctionProtocol;
 
-import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -29,8 +29,8 @@ import java.util.stream.Collectors;
 public interface MiningFinalizer {
     void finalizeMining();
 
-    static DefaultMiningFinalizer finalizer(final URL miningUrl, final ServiceDiscovery serviceDiscovery, final DataAgent dataAgent, final Codec codec, final Map<UUID, ObjectWithAttributes> allObjects) {
-        return new DefaultMiningFinalizer(miningUrl, serviceDiscovery, dataAgent, codec, allObjects);
+    static DefaultMiningFinalizer finalizer(final MiningRequest miningRequest, final ServiceDiscovery serviceDiscovery, final DataAgent dataAgent, final Codec codec, final Map<UUID, ObjectWithAttributes> allObjects) {
+        return new DefaultMiningFinalizer(miningRequest, serviceDiscovery, dataAgent, codec, allObjects);
     }
 }
 
@@ -38,7 +38,7 @@ public interface MiningFinalizer {
 @RequiredArgsConstructor
 class DefaultMiningFinalizer implements MiningFinalizer {
 
-    private final URL miningUrl;
+    private final MiningRequest miningRequest;
     private final ServiceDiscovery serviceDiscovery;
     private final DataAgent dataAgent;
     private final Codec codec;
@@ -73,14 +73,14 @@ class DefaultMiningFinalizer implements MiningFinalizer {
                                             e.getValue().getAverageDistance(),
                                             CollectionUtil.mapToSet(e.getValue().getObjectsIds(), allObjects::get)))
                                     .collect(Collectors.toList());
-                    reportGenerator.generate(miningUrl, clusterSummaryWithObjects);
+                    reportGenerator.generate(miningRequest.getMiningUrl(), clusterSummaryWithObjects);
 
                     final ACLMessage startRefinementMsg = AuctionProtocol.startRefinementRequest.templatedMessage();
                     final Set<AID> refinementParticipants = serviceDiscovery.findServices(AuctionProtocol.startRefinementRequest.getTargetService()).result().stream()
                             .map(DFAgentDescription::getName)
                             .collect(Collectors.toSet());
                     refinementParticipants.forEach(startRefinementMsg::addReceiver);
-                    startRefinementMsg.setContent(codec.encode(new StartRefinementRequest(UUID.randomUUID())));
+                    startRefinementMsg.setContent(codec.encode(new StartRefinementRequest(UUID.randomUUID(), miningRequest.getRefinementSize())));
 
                     WaitUntilAllRespondedMessageSpecification.complexWithRegisterAndDeregister(
                             refinementParticipants,
@@ -102,7 +102,7 @@ class DefaultMiningFinalizer implements MiningFinalizer {
                                         .map(allObjects::get)
                                         .collect(Collectors.toSet())))
                         .collect(Collectors.toList());
-                reportGenerator.generate(miningUrl, clusterSummaryWithObjects);
+                reportGenerator.generate(miningRequest.getMiningUrl(), clusterSummaryWithObjects);
             }
 
         });

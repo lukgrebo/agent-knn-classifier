@@ -12,6 +12,7 @@ import pl.wut.sag.knn.infrastructure.function.Result;
 import pl.wut.sag.knn.ontology.auction.Bid;
 import pl.wut.sag.knn.ontology.auction.ClusterSummary;
 import pl.wut.sag.knn.ontology.auction.RefinementSummary;
+import pl.wut.sag.knn.ontology.auction.StartRefinementRequest;
 import pl.wut.sag.knn.ontology.object.ObjectWithAttributes;
 import pl.wut.sag.knn.protocol.auction.AuctionProtocol;
 
@@ -41,9 +42,11 @@ public interface RefinementManager {
 @RequiredArgsConstructor
 class DefaultRefinementManager implements RefinementManager {
 
+    private static final int DEFAULT_REFINEMENT_SIZE = 15;
+
     private final ClusteringAgent agent;
     private final Map<UUID, Set<OwnedBid>> bids = new HashMap<>();
-    private static final int refinementSize = 3;
+    private int refinementSize = DEFAULT_REFINEMENT_SIZE;
     private int expectedBidderCount;
     private int soldObjects;
     private ACLMessage refinementStartMessage;
@@ -52,13 +55,15 @@ class DefaultRefinementManager implements RefinementManager {
     public void startRefinement(final ACLMessage incomingMessage) {
         log.info("{} Got request to start refinement!", agent.getName());
         this.refinementStartMessage = incomingMessage;
+        final StartRefinementRequest request = agent.codec.decode(incomingMessage.getContent(), AuctionProtocol.startRefinementRequest.getMessageClass()).result();
+        this.refinementSize = request.getRefinementSize();
         offerMostDistantElementToOtherAgents();
     }
 
     @Override
     public void handleBid(final ACLMessage message) {
         final Bid bid = agent.codec.decode(message.getContent(), AuctionProtocol.sendBid.getMessageClass()).result();
-        log.info("Got refinement bid for object {}", bid.getObjectUuid());
+        log.info("Got refinement bid for object {} from {} value {}", bid.getObjectUuid(), message.getSender().getName(), bid.getValue());
         bids.merge(bid.getObjectUuid(), CollectionUtil.initializedMutableCollection(HashSet::new, new OwnedBid(bid, message.getSender())), CollectionUtil::mergeToSet);
         final Optional<ObjectWithAttributes> maybeElement = agent.managedCluster.viewElements().stream().filter(e -> e.getId().equals(bid.getObjectUuid())).findFirst();
         final Set<OwnedBid> allBids = this.bids.get(bid.getObjectUuid());
@@ -71,7 +76,8 @@ class DefaultRefinementManager implements RefinementManager {
                 agent.managedCluster.getElements().remove(element);
                 final ACLMessage refiningMessage = AuctionProtocol.acceptBidAndSendObject.templatedMessage();
                 refiningMessage.setContent(agent.codec.encode(element));
-                refiningMessage.addReceiver(message.getSender());
+                refiningMessage.addReceiver(maxBid.getOwner());
+                log.info("Sending object {} to agent {}", maxBid.getObjectUuid(), maxBid.getOwner());
                 agent.send(refiningMessage);
                 soldObjects += 1;
                 if (!isRefinementDone()) {
@@ -96,13 +102,15 @@ class DefaultRefinementManager implements RefinementManager {
     private void offerMostDistantElementToOtherAgents() {
         final Result<List<DFAgentDescription>, FIPAException> agents = agent.serviceDiscovery.findServices(AuctionProtocol.proposeObject.getTargetService());
         this.expectedBidderCount = agents.result().size();
-        final ObjectWithAttributes mostDistantElement = agent.distanceCalculator.findMostDistantElement(agent.managedCluster.viewElements());
+        final Optional<ObjectWithAttributes> maybeMostDistantElement = agent.distanceCalculator.findMostDistantElement(agent.managedCluster.viewElements());
+        maybeMostDistantElement.ifPresent(mostDistantElement -> {
+            final ACLMessage message = AuctionProtocol.proposeObject.templatedMessage();
+            message.setContent(agent.codec.encode(mostDistantElement));
+            log.info("Offering object {} as refinement offer", mostDistantElement.getId());
+            agents.result().stream().map(DFAgentDescription::getName).forEach(message::addReceiver);
 
-        final ACLMessage message = AuctionProtocol.proposeObject.templatedMessage();
-        message.setContent(agent.codec.encode(mostDistantElement));
-        agents.result().stream().map(DFAgentDescription::getName).forEach(message::addReceiver);
-
-        agent.send(message);
+            agent.send(message);
+        });
     }
 
     @Override

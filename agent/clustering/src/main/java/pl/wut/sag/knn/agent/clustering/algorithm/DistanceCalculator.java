@@ -5,6 +5,7 @@ import pl.wut.sag.knn.infrastructure.collection.ImmutableList;
 import pl.wut.sag.knn.ontology.object.ObjectWithAttributes;
 
 import java.util.Comparator;
+import java.util.Optional;
 
 public interface DistanceCalculator {
     double calculateDistance(final ObjectWithAttributes one, final ObjectWithAttributes other);
@@ -17,10 +18,10 @@ public interface DistanceCalculator {
 
     default double calculateAverageDistaneInCluster(final ImmutableList<ObjectWithAttributes> elements) {
         return elements.stream()
-                .mapToDouble(e -> calculateAverageDistance(elements, e)).average().getAsDouble();
+                .mapToDouble(e -> calculateAverageDistance(elements, e)).average().orElse(0.0001);
     }
 
-    default ObjectWithAttributes findMostDistantElement(final ImmutableList<ObjectWithAttributes> elements) {
-        return elements.stream().max(Comparator.comparingDouble(e -> calculateAverageDistance(elements, e))).get();
+    default Optional<ObjectWithAttributes> findMostDistantElement(final ImmutableList<ObjectWithAttributes> elements) {
+        return elements.stream().max(Comparator.comparingDouble(e -> calculateAverageDistance(elements, e)));
     }
 }

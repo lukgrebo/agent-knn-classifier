@@ -44,7 +44,7 @@ class DefaultAuctionRunner implements AuctionRunner {
         this.serviceDiscovery = serviceDiscovery;
         this.dataAgent = dataAgent;
         this.clusteringAgentRunner = clusteringAgentRunner;
-        this.finalizer = MiningFinalizer.finalizer(request.getMiningUrl(), serviceDiscovery, dataAgent, codec, objectsToPropose.stream().collect(Collectors.toMap(ObjectWithAttributes::getId, Function.identity())));
+        this.finalizer = MiningFinalizer.finalizer(request, serviceDiscovery, dataAgent, codec, objectsToPropose.stream().collect(Collectors.toMap(ObjectWithAttributes::getId, Function.identity())));
         startNewAuction();
     }
 

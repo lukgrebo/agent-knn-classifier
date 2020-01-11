@@ -13,6 +13,7 @@ public class MessageHandler extends CyclicBehaviour {
 
     private final List<IMessageSpecification> specifications;
     private final List<IMessageSpecification> toAdd = new ArrayList<>();
+    private final List<IMessageSpecification> toRemove = new ArrayList<>();
 
     public MessageHandler(final IMessageSpecification... specifications) {
         this.specifications = new ArrayList<>(Arrays.asList(specifications));
@@ -23,13 +24,15 @@ public class MessageHandler extends CyclicBehaviour {
     }
 
     public void remove(final IMessageSpecification specification) {
-        specifications.remove(specification);
+        toRemove.add(specification);
     }
 
     @Override
     public void action() {
         specifications.addAll(toAdd);
         toAdd.clear();
+        specifications.removeAll(toRemove);
+        toRemove.clear();
 
         final ACLMessage message = myAgent.receive();
         if (message != null) {

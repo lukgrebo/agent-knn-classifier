@@ -70,11 +70,13 @@ public class WaitUntilAllRespondedMessageSpecification<R> implements IMessageSpe
         final R r = messageMapper.apply(message);
 
         responses.put(sender, r);
-        if (doWithSpecification != null) {
-            doWithSpecification.accept(this);
-        }
-        if (doWithResponses != null) {
-            doWithResponses.accept(responses);
+        if (isFinished()) {
+            if (doWithSpecification != null) {
+                doWithSpecification.accept(this);
+            }
+            if (doWithResponses != null) {
+                doWithResponses.accept(responses);
+            }
         }
     }
 

@@ -14,6 +14,7 @@ import pl.wut.sag.knn.infrastructure.discovery.ServiceDiscovery;
 import pl.wut.sag.knn.infrastructure.message_handler.IMessageSpecification;
 import pl.wut.sag.knn.infrastructure.message_handler.WaitUntilAllRespondedMessageSpecification;
 import pl.wut.sag.knn.ontology.auction.ClusterSummaryRequest;
+import pl.wut.sag.knn.ontology.auction.RefinementSummary;
 import pl.wut.sag.knn.ontology.auction.StartRefinementRequest;
 import pl.wut.sag.knn.ontology.object.ObjectWithAttributes;
 import pl.wut.sag.knn.protocol.auction.AuctionProtocol;
@@ -86,11 +87,22 @@ class DefaultMiningFinalizer implements MiningFinalizer {
                             AuctionProtocol.refinementFinishedResponse.toMessageTemplate(),
                             dataAgent.messageHandler,
                             refinementEndMessage -> codec.decode(refinementEndMessage.getContent(), AuctionProtocol.refinementFinishedResponse.getMessageClass()).result(),
-                            responses -> log.info("Finished waiting for responses {}", responses));
+                            this::finalizeRefinement);
 
                     auctionState.startRefinement();
                     dataAgent.send(startRefinementMsg);
                 }
+            }
+
+            private void finalizeRefinement(final Map<AID, RefinementSummary> map) {
+                final List<ClusterSummaryWithObjects> clusterSummaryWithObjects = map.entrySet().stream()
+                        .map(e -> new ClusterSummaryWithObjects(e.getKey(),
+                                e.getValue().getClusterSummary().getAverageDistance(),
+                                e.getValue().getClusterSummary().getObjectsIds().stream()
+                                        .map(allObjects::get)
+                                        .collect(Collectors.toSet())))
+                        .collect(Collectors.toList());
+                reportGenerator.generate(miningUrl, clusterSummaryWithObjects);
             }
 
         });
@@ -98,5 +110,6 @@ class DefaultMiningFinalizer implements MiningFinalizer {
         dataAgent.send(message);
         log.info("Message send!");
     }
+
 
 }

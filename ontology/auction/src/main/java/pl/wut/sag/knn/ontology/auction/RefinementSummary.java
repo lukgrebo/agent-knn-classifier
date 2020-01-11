@@ -1,5 +1,10 @@
 package pl.wut.sag.knn.ontology.auction;
 
-public class RefinementSummary {
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
+@Getter
+@RequiredArgsConstructor(staticName = "of")
+public class RefinementSummary {
+    private final ClusterSummary clusterSummary;
 }

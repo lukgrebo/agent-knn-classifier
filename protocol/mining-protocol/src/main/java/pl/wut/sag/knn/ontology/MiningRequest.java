@@ -16,4 +16,5 @@ public class MiningRequest {
     private URL miningUrl;
     private MiningRequestType type;
     private double minimalBid;
+    private int refinementSize;
 }

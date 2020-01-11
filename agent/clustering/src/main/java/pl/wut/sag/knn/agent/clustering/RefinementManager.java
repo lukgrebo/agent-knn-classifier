@@ -10,6 +10,7 @@ import pl.wut.sag.knn.agent.clustering.model.OwnedBid;
 import pl.wut.sag.knn.infrastructure.collection.CollectionUtil;
 import pl.wut.sag.knn.infrastructure.function.Result;
 import pl.wut.sag.knn.ontology.auction.Bid;
+import pl.wut.sag.knn.ontology.auction.ClusterSummary;
 import pl.wut.sag.knn.ontology.auction.RefinementSummary;
 import pl.wut.sag.knn.ontology.object.ObjectWithAttributes;
 import pl.wut.sag.knn.protocol.auction.AuctionProtocol;
@@ -22,6 +23,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 public interface RefinementManager {
     void startRefinement(final ACLMessage message);
@@ -83,7 +85,9 @@ class DefaultRefinementManager implements RefinementManager {
 
     private void informDataAgentOfFinishedRefinement() {
         log.info("Informing data agent of finished refinement");
-        final RefinementSummary refinementSummary = new RefinementSummary();
+        final ClusterSummary summary = new ClusterSummary(agent.managedCluster.viewElements().stream().map(ObjectWithAttributes::getId).collect(Collectors.toSet()),
+                agent.distanceCalculator.calculateAverageDistaneInCluster(agent.managedCluster.viewElements()));
+        final RefinementSummary refinementSummary = RefinementSummary.of(summary);
         final ACLMessage messageToDataAgent = AuctionProtocol.refinementFinishedResponse.toResponse(refinementStartMessage, agent.codec.encode(refinementSummary));
 
         agent.send(messageToDataAgent);

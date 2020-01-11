@@ -103,7 +103,10 @@ public class WaitUntilAllRespondedMessageSpecification<R> implements IMessageSpe
                                                                                                     final MessageHandler messageHandler,
                                                                                                     final Function<ACLMessage, R> mapper,
                                                                                                     final Consumer<Map<AID, R>> doAfterFinishAndDeregister) {
-        return new WaitUntilAllRespondedMessageSpecification<>(agentsToWaitFor, messageTemplate, mapper, messageHandler::remove, doAfterFinishAndDeregister, null);
+        final WaitUntilAllRespondedMessageSpecification<R> spec = new WaitUntilAllRespondedMessageSpecification<>(agentsToWaitFor, messageTemplate, mapper, messageHandler::remove, doAfterFinishAndDeregister, null);
+        messageHandler.add(spec);
+
+        return spec;
     }
 
 }

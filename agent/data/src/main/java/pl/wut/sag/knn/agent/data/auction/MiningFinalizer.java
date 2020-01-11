@@ -1,5 +1,6 @@
 package pl.wut.sag.knn.agent.data.auction;
 
+import jade.core.AID;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
@@ -11,7 +12,7 @@ import pl.wut.sag.knn.infrastructure.codec.Codec;
 import pl.wut.sag.knn.infrastructure.collection.CollectionUtil;
 import pl.wut.sag.knn.infrastructure.discovery.ServiceDiscovery;
 import pl.wut.sag.knn.infrastructure.message_handler.IMessageSpecification;
-import pl.wut.sag.knn.infrastructure.message_handler.MessageSpecification;
+import pl.wut.sag.knn.infrastructure.message_handler.WaitUntilAllRespondedMessageSpecification;
 import pl.wut.sag.knn.ontology.auction.ClusterSummaryRequest;
 import pl.wut.sag.knn.ontology.auction.StartRefinementRequest;
 import pl.wut.sag.knn.ontology.object.ObjectWithAttributes;
@@ -20,13 +21,14 @@ import pl.wut.sag.knn.protocol.auction.AuctionProtocol;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 public interface MiningFinalizer {
     void finalizeMining();
 
-    static DefaultMiningFinalizer finalizer(final URL miningUrl, final ServiceDiscovery serviceDiscovery, final DataAgent dataAgent, final Codec codec, Map<UUID, ObjectWithAttributes> allObjects) {
+    static DefaultMiningFinalizer finalizer(final URL miningUrl, final ServiceDiscovery serviceDiscovery, final DataAgent dataAgent, final Codec codec, final Map<UUID, ObjectWithAttributes> allObjects) {
         return new DefaultMiningFinalizer(miningUrl, serviceDiscovery, dataAgent, codec, allObjects);
     }
 }
@@ -73,20 +75,19 @@ class DefaultMiningFinalizer implements MiningFinalizer {
                     reportGenerator.generate(miningUrl, clusterSummaryWithObjects);
 
                     final ACLMessage startRefinementMsg = AuctionProtocol.startRefinementRequest.templatedMessage();
-                    serviceDiscovery.findServices(AuctionProtocol.startRefinementRequest.getTargetService()).result().stream()
+                    final Set<AID> refinementParticipants = serviceDiscovery.findServices(AuctionProtocol.startRefinementRequest.getTargetService()).result().stream()
                             .map(DFAgentDescription::getName)
-                            .forEach(startRefinementMsg::addReceiver);
+                            .collect(Collectors.toSet());
+                    refinementParticipants.forEach(startRefinementMsg::addReceiver);
                     startRefinementMsg.setContent(codec.encode(new StartRefinementRequest(UUID.randomUUID())));
 
-                    dataAgent.messageHandler.add(MessageSpecification.of(
+                    WaitUntilAllRespondedMessageSpecification.complexWithRegisterAndDeregister(
+                            refinementParticipants,
                             AuctionProtocol.refinementFinishedResponse.toMessageTemplate(),
-                            msage -> {
-                                auctionState.refinementFinished(msage.getSender());
-                                if (auctionState.isRefinementDone()) {
-                                    log.info("REFINEMENT IS DONE");
-                                }
-                            })
-                    );
+                            dataAgent.messageHandler,
+                            refinementEndMessage -> codec.decode(refinementEndMessage.getContent(), AuctionProtocol.refinementFinishedResponse.getMessageClass()).result(),
+                            responses -> log.info("Finished waiting for responses {}", responses));
+
                     auctionState.startRefinement();
                     dataAgent.send(startRefinementMsg);
                 }

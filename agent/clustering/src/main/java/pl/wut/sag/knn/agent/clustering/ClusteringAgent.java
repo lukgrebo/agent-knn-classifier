@@ -1,8 +1,6 @@
 package pl.wut.sag.knn.agent.clustering;
 
 import jade.core.Agent;
-import jade.domain.FIPAAgentManagement.DFAgentDescription;
-import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
 import lombok.extern.slf4j.Slf4j;
 import pl.wut.sag.knn.agent.clustering.algorithm.BidCalculator;
@@ -11,7 +9,6 @@ import pl.wut.sag.knn.agent.clustering.algorithm.EuclideanDistanceCalculator;
 import pl.wut.sag.knn.infrastructure.codec.Codec;
 import pl.wut.sag.knn.infrastructure.discovery.ServiceDiscovery;
 import pl.wut.sag.knn.infrastructure.discovery.ServiceRegistration;
-import pl.wut.sag.knn.infrastructure.function.Result;
 import pl.wut.sag.knn.infrastructure.message_handler.MessageHandler;
 import pl.wut.sag.knn.infrastructure.message_handler.MessageSpecification;
 import pl.wut.sag.knn.infrastructure.parser.DoubleParser;
@@ -21,60 +18,29 @@ import pl.wut.sag.knn.ontology.object.ObjectWithAttributes;
 import pl.wut.sag.knn.protocol.auction.AuctionProtocol;
 
 import java.time.Duration;
-import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
 public class ClusteringAgent extends Agent {
 
-    private final Cluster managedCluster = Cluster.emptyWithClass(UUID.randomUUID().toString());
-    private final DistanceCalculator distanceCalculator = new EuclideanDistanceCalculator(new DoubleParser());
-    private final Codec codec = Codec.json();
-    private final BidCalculator bidCalculator = BidCalculator.calculator(distanceCalculator);
-    private final ServiceDiscovery serviceDiscovery = new ServiceDiscovery(this);
-    boolean refinement;
+    final Cluster managedCluster = Cluster.emptyWithClass(UUID.randomUUID().toString());
+    final DistanceCalculator distanceCalculator = new EuclideanDistanceCalculator(new DoubleParser());
+    final Codec codec = Codec.json();
+    final BidCalculator bidCalculator = BidCalculator.calculator(distanceCalculator);
+    final ServiceDiscovery serviceDiscovery = new ServiceDiscovery(this);
+    private final RefinementManager refinementManager = RefinementManager.newManager(this);
 
     @Override
     protected void setup() {
         this.addBehaviour(new MessageHandler(
                 MessageSpecification.of(AuctionProtocol.proposeObject.toMessageTemplate(), this::bidRequested),
-                MessageSpecification.of(AuctionProtocol.sendBid.toMessageTemplate(), this::handleBid),
+                MessageSpecification.of(AuctionProtocol.sendBid.toMessageTemplate(), refinementManager::handleBid),
                 MessageSpecification.of(AuctionProtocol.acceptBidAndSendObject.toMessageTemplate(), this::addNewObject),
                 MessageSpecification.of(AuctionProtocol.requestSummary.toMessageTemplate(), this::sendSummary),
-                MessageSpecification.of(AuctionProtocol.startRefinementRequest.toMessageTemplate(), this::startRefinement)
+                MessageSpecification.of(AuctionProtocol.startRefinementRequest.toMessageTemplate(), refinementManager::startRefinement)
         ));
         this.registerToYellowPages();
-    }
-
-    private void handleBid(final ACLMessage message) {
-        final Bid bid = codec.decode(message.getContent(), AuctionProtocol.sendBid.getMessageClass()).result();
-        final Optional<ObjectWithAttributes> maybeElement = managedCluster.viewElements().stream().filter(e -> e.getId().equals(bid.getObjectUuid())).findFirst();
-        if (maybeElement.isPresent()) {
-            final ObjectWithAttributes element = maybeElement.get();
-            final Bid myBid = bidCalculator.calculateBid(managedCluster, element);
-            if (bid.getValue() >= myBid.getValue()) {
-                managedCluster.getElements().remove(element);
-                final ACLMessage refiningMessage = AuctionProtocol.acceptBidAndSendObject.templatedMessage();
-                refiningMessage.setContent(codec.encode(element));
-                refiningMessage.addReceiver(message.getSender());
-                send(refiningMessage);
-            }
-        }
-    }
-
-    private void startRefinement(final ACLMessage request) {
-        log.info("{} Got request to start refinement!", getName());
-        final Result<List<DFAgentDescription>, FIPAException> agents = serviceDiscovery.findServices(AuctionProtocol.proposeObject.getTargetService());
-        final ObjectWithAttributes mostDistantElement = distanceCalculator.findMostDistantElement(managedCluster.viewElements());
-
-        refinement = true;
-        final ACLMessage message = AuctionProtocol.proposeObject.templatedMessage();
-        message.setContent(codec.encode(mostDistantElement));
-        agents.result().stream().map(DFAgentDescription::getName).forEach(message::addReceiver);
-
-        send(message);
     }
 
     private void sendSummary(final ACLMessage message) {
@@ -82,9 +48,6 @@ public class ClusteringAgent extends Agent {
         final ClusterSummary summary = new ClusterSummary(
                 managedCluster.getElements().stream().map(ObjectWithAttributes::getId).collect(Collectors.toSet()), distanceCalculator.calculateAverageDistaneInCluster(managedCluster.viewElements()));
         send(AuctionProtocol.summaryResponse.toResponse(message, codec.encode(summary)));
-//        ServiceRegistration.deregister(this);
-//        this.doDelete();
-//        this.takeDown();
     }
 
     private void bidRequested(final ACLMessage aclMessage) {

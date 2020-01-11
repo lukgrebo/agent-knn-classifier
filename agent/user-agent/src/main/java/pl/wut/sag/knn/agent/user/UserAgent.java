@@ -34,25 +34,28 @@ public class UserAgent extends Agent implements UserAgentApiHandle {
     @Override
     public Result<String, ? extends Exception> processMiningRequest(final MiningRequest miningRequest) {
         log.info("Got mining request to process {}", miningRequest);
-        final UUID uuid = UUID.randomUUID();
 
         return serviceDiscovery.findServices(MiningProtocol.sendRequest.getTargetService())
                 .mapResult(CollectionUtil::firstElement)
-                .mapResult(x -> sendRequest(x, miningRequest, uuid));
+                .mapResult(x -> sendRequest(x, miningRequest));
     }
 
-    private String sendRequest(final Optional<DFAgentDescription> agentDescription, final MiningRequest miningRequest, final UUID uuid) {
+    private String sendRequest(final Optional<DFAgentDescription> agentDescription, final MiningRequest miningRequest) {
         if (!agentDescription.isPresent()) {
             return "Nie znaleziono agenta danych gotowego zrealizować żądanie";
         }
-        final pl.wut.sag.knn.ontology.MiningRequest request =
-                new pl.wut.sag.knn.ontology.MiningRequest(uuid, miningRequest.getMiningUrl(), MiningRequestType.URL, miningRequest.getMinimalBid());
 
+        final pl.wut.sag.knn.ontology.MiningRequest request = mapMiningRequest(miningRequest);
         final ACLMessage message = MiningProtocol.sendRequest.templatedMessage();
         message.addReceiver(agentDescription.get().getName());
         message.setContent(codec.encode(request));
         send(message);
 
-        return "Wysłano zlecenie do agenta danych, id zlecenia: " + uuid;
+        return "Wysłano zlecenie do agenta danych, id zlecenia: " + request.getRequestId();
+    }
+
+    private pl.wut.sag.knn.ontology.MiningRequest mapMiningRequest(final MiningRequest rq) {
+        return new pl.wut.sag.knn.ontology.MiningRequest(UUID.randomUUID(), rq.getMiningUrl(), MiningRequestType.URL, rq.getMinimalBid(), rq.getRefinementSize());
+
     }
 }

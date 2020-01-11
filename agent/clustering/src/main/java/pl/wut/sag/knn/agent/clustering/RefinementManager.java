@@ -63,7 +63,7 @@ class DefaultRefinementManager implements RefinementManager {
     @Override
     public void handleBid(final ACLMessage message) {
         final Bid bid = agent.codec.decode(message.getContent(), AuctionProtocol.sendBid.getMessageClass()).result();
-        log.info("Got refinement bid for object {} from {} value {}", bid.getObjectUuid(), message.getSender().getName(), bid.getValue());
+        log.info("{} got refinement bid for object {} from {} value {}", agent.getName(), bid.getObjectUuid(), message.getSender().getName(), bid.getValue());
         bids.merge(bid.getObjectUuid(), CollectionUtil.initializedMutableCollection(HashSet::new, new OwnedBid(bid, message.getSender())), CollectionUtil::mergeToSet);
         final Optional<ObjectWithAttributes> maybeElement = agent.managedCluster.viewElements().stream().filter(e -> e.getId().equals(bid.getObjectUuid())).findFirst();
         final Set<OwnedBid> allBids = this.bids.get(bid.getObjectUuid());
@@ -90,7 +90,7 @@ class DefaultRefinementManager implements RefinementManager {
     }
 
     private void informDataAgentOfFinishedRefinement() {
-        log.info("Informing data agent of finished refinement");
+        log.info("{} informing data agent of finished refinement", agent.getName());
         final ClusterSummary summary = new ClusterSummary(agent.managedCluster.viewElements().stream().map(ObjectWithAttributes::getId).collect(Collectors.toSet()),
                 agent.distanceCalculator.calculateAverageDistaneInCluster(agent.managedCluster.viewElements()));
         final RefinementSummary refinementSummary = RefinementSummary.of(summary);
@@ -104,9 +104,10 @@ class DefaultRefinementManager implements RefinementManager {
         this.expectedBidderCount = agents.result().size();
         final Optional<ObjectWithAttributes> maybeMostDistantElement = agent.distanceCalculator.findMostDistantElement(agent.managedCluster.viewElements());
         maybeMostDistantElement.ifPresent(mostDistantElement -> {
+            bids.remove(mostDistantElement.getId()); //remove previous bids for given object
             final ACLMessage message = AuctionProtocol.proposeObject.templatedMessage();
             message.setContent(agent.codec.encode(mostDistantElement));
-            log.info("Offering object {} as refinement offer", mostDistantElement.getId());
+            log.info("{} offering object {} as refinement offer", agent.getName(), mostDistantElement.getId());
             agents.result().stream().map(DFAgentDescription::getName).forEach(message::addReceiver);
 
             agent.send(message);

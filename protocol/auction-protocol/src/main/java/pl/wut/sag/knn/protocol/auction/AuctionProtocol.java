@@ -92,5 +92,4 @@ public class AuctionProtocol extends Protocol {
                     .stepName("Respond with cluster summary")
                     .build();
 
-
 }

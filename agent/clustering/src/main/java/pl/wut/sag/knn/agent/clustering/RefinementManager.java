@@ -6,12 +6,15 @@ import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import pl.wut.sag.knn.agent.clustering.model.OwnedBid;
 import pl.wut.sag.knn.infrastructure.collection.CollectionUtil;
 import pl.wut.sag.knn.infrastructure.function.Result;
 import pl.wut.sag.knn.ontology.auction.Bid;
+import pl.wut.sag.knn.ontology.auction.RefinementSummary;
 import pl.wut.sag.knn.ontology.object.ObjectWithAttributes;
 import pl.wut.sag.knn.protocol.auction.AuctionProtocol;
 
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -35,15 +38,18 @@ public interface RefinementManager {
 @Slf4j
 @RequiredArgsConstructor
 class DefaultRefinementManager implements RefinementManager {
+
     private final ClusteringAgent agent;
-    private final Map<UUID, Set<Bid>> bids = new HashMap<>();
+    private final Map<UUID, Set<OwnedBid>> bids = new HashMap<>();
     private static final int refinementSize = 3;
     private int expectedBidderCount;
     private int soldObjects;
+    private ACLMessage refinementStartMessage;
 
     @Override
     public void startRefinement(final ACLMessage incomingMessage) {
         log.info("{} Got request to start refinement!", agent.getName());
+        this.refinementStartMessage = incomingMessage;
         offerMostDistantElementToOtherAgents();
     }
 
@@ -51,12 +57,15 @@ class DefaultRefinementManager implements RefinementManager {
     public void handleBid(final ACLMessage message) {
         final Bid bid = agent.codec.decode(message.getContent(), AuctionProtocol.sendBid.getMessageClass()).result();
         log.info("Got refinement bid for object {}", bid.getObjectUuid());
-        bids.merge(bid.getObjectUuid(), CollectionUtil.initializedMutableCollection(HashSet::new, bid), CollectionUtil::mergeToSet);
+        bids.merge(bid.getObjectUuid(), CollectionUtil.initializedMutableCollection(HashSet::new, new OwnedBid(bid, message.getSender())), CollectionUtil::mergeToSet);
         final Optional<ObjectWithAttributes> maybeElement = agent.managedCluster.viewElements().stream().filter(e -> e.getId().equals(bid.getObjectUuid())).findFirst();
-        if (maybeElement.isPresent() && bids.get(bid.getObjectUuid()).size() == expectedBidderCount) {
+        final Set<OwnedBid> allBids = this.bids.get(bid.getObjectUuid());
+        if (maybeElement.isPresent() && allBids.size() == expectedBidderCount) {
             final ObjectWithAttributes element = maybeElement.get();
-            final Bid myBid = agent.bidCalculator.calculateBid(agent.managedCluster, element);
-            if (bid.getValue() > myBid.getValue()) {
+
+            final Optional<OwnedBid> maybeMaxBid = allBids.stream().max(Comparator.comparingDouble(OwnedBid::getValue));
+
+            maybeMaxBid.ifPresent(maxBid -> {
                 agent.managedCluster.getElements().remove(element);
                 final ACLMessage refiningMessage = AuctionProtocol.acceptBidAndSendObject.templatedMessage();
                 refiningMessage.setContent(agent.codec.encode(element));
@@ -68,12 +77,16 @@ class DefaultRefinementManager implements RefinementManager {
                 } else {
                     informDataAgentOfFinishedRefinement();
                 }
-            }
+            });
         }
     }
 
     private void informDataAgentOfFinishedRefinement() {
         log.info("Informing data agent of finished refinement");
+        final RefinementSummary refinementSummary = new RefinementSummary();
+        final ACLMessage messageToDataAgent = AuctionProtocol.refinementFinishedResponse.toResponse(refinementStartMessage, agent.codec.encode(refinementSummary));
+
+        agent.send(messageToDataAgent);
     }
 
     private void offerMostDistantElementToOtherAgents() {

@@ -37,7 +37,6 @@ import java.util.stream.Collectors;
 public class DataAgent extends Agent implements MessageSender {
 
     private final Codec codec = Codec.json();
-    private final CsvObjectParser csvObjectParser = new CsvObjectParser();
     private final Queue<MiningRequest> miningRequests = new ArrayDeque<>();
     private final ServiceDiscovery serviceDiscovery = new ServiceDiscovery(this);
     private final ClusteringAgentRunner clusteringAgentRunner = ClusteringAgentRunner.initializeClusteringAgentsContainerAndGetRunner();
@@ -70,6 +69,7 @@ public class DataAgent extends Agent implements MessageSender {
             log.info("Error loading data from" + request.getMiningUrl());
             return;
         }
+        final CsvObjectParser csvObjectParser = new CsvObjectParser(request);
         final List<Result<ObjectWithAttributes, ParseError>> parsedEntries = result.result().stream()
                 .map(csvObjectParser::parse)
                 .collect(Collectors.toList());

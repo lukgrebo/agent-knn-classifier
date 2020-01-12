@@ -1,8 +1,10 @@
 package pl.wut.sag.knn.agent.data.loader;
 
+import lombok.RequiredArgsConstructor;
 import pl.wut.sag.knn.infrastructure.function.Result;
 import pl.wut.sag.knn.infrastructure.parser.ParseError;
 import pl.wut.sag.knn.infrastructure.parser.Parser;
+import pl.wut.sag.knn.ontology.MiningRequest;
 import pl.wut.sag.knn.ontology.object.ObjectWithAttributes;
 
 import java.util.Map;
@@ -10,7 +12,10 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+@RequiredArgsConstructor
 public class CsvObjectParser implements Parser<ObjectWithAttributes> {
+
+    private final MiningRequest miningRequest;
 
     @Override
     public Result<ObjectWithAttributes, ParseError> parse(final String input) {
@@ -20,6 +25,6 @@ public class CsvObjectParser implements Parser<ObjectWithAttributes> {
                 .boxed()
                 .collect(Collectors.toMap(Function.identity(), i -> split[i]));
 
-        return Result.ok(ObjectWithAttributes.of(attributes));
+        return Result.ok(ObjectWithAttributes.of(attributes, miningRequest.getDiscriminatorColumn()));
     }
 }

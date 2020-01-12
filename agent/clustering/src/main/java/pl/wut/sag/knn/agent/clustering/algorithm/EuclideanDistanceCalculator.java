@@ -25,7 +25,7 @@ public class EuclideanDistanceCalculator implements DistanceCalculator {
 
     private double singleDimenstionalDistance(final String value, final Optional<String> other) {
         if (!other.isPresent()) {
-            return 0.5D; //TODO, missing attribute fine function
+            return 0.5D;
         }
 
         final String otherValue = other.get();

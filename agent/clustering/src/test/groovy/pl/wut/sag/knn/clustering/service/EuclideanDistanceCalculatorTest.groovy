@@ -16,19 +16,19 @@ class EuclideanDistanceCalculatorTest extends Specification {
         calculator.calculateDistance(one, other) == result
 
         where:
-        one                                                  | other                                                | result
+        one                                                     | other                                                   | result
         //same String attributes
-        ObjectWithAttributes.of([1: "x"])                    | ObjectWithAttributes.of(1: "x")                      | 0
+        ObjectWithAttributes.of([1: "x"], 0)                    | ObjectWithAttributes.of(1: "x", 0)                      | 0
         // same numeric attributes
-        ObjectWithAttributes.of([1: "1.5"])                  | ObjectWithAttributes.of(1: "1.5")                    | 0
+        ObjectWithAttributes.of([1: "1.5"], 0)                  | ObjectWithAttributes.of(1: "1.5", 0)                    | 0
         //diferent String attributes
-        ObjectWithAttributes.of([1: "x"])                    | ObjectWithAttributes.of(1: "d")                      | 1
+        ObjectWithAttributes.of([1: "x"], 0)                    | ObjectWithAttributes.of(1: "d", 0)                      | 1
         // different numeric attributes
-        ObjectWithAttributes.of([1: "1"])                    | ObjectWithAttributes.of(1: "4")                      | 3
+        ObjectWithAttributes.of([1: "1"], 0)                    | ObjectWithAttributes.of(1: "4", 0)                      | 3
         // multidimensionals
-        ObjectWithAttributes.of([1: "x", 2: "d", 3: "hehe"]) | ObjectWithAttributes.of([1: "x", 2: "d", 3: "hehe"]) | 0
-        ObjectWithAttributes.of([1: "3", 2: "4"])            | ObjectWithAttributes.of([1: "0", 2: "0"])            | 5
+        ObjectWithAttributes.of([1: "x", 2: "d", 3: "hehe"], 0) | ObjectWithAttributes.of([1: "x", 2: "d", 3: "hehe"], 0) | 0
+        ObjectWithAttributes.of([1: "3", 2: "4"], 0)            | ObjectWithAttributes.of([1: "0", 2: "0"], 0)            | 5
         // missing attributes
-        ObjectWithAttributes.of(1: "5", 2: "25")             | ObjectWithAttributes.of([:])                         | 0 //TODO, what if attributes missing
+        ObjectWithAttributes.of(1: "5", 2: "25", 0)             | ObjectWithAttributes.of([:], 0)                         | 0 //TODO, what if attributes missing
     }
 }

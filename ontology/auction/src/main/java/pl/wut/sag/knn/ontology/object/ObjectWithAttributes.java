@@ -21,8 +21,12 @@ public final class ObjectWithAttributes {
 
     private final Map<Integer, String> attributesAndValues;
 
-    public Stream<IndexedAttribute> indexedAttributes() {
-        return attributesAndValues.entrySet().stream().map(e -> IndexedAttribute.of(e.getKey(), e.getValue()));
+    private final int discriminatorColumn;
+
+    public Stream<IndexedAttribute> indexedAttributesSkipDiscriminator() {
+        return attributesAndValues.entrySet().stream()
+                .filter(e -> e.getKey() != discriminatorColumn)
+                .map(e -> IndexedAttribute.of(e.getKey(), e.getValue()));
     }
 
     public Optional<String> getAsString(final int attributeOrderNumber) {
@@ -44,8 +48,8 @@ public final class ObjectWithAttributes {
         return getAsString(attributeOrderNumber).map(parser);
     }
 
-    public static ObjectWithAttributes of(final Map<Integer, String> attributesAndValues) {
-        return new ObjectWithAttributes(UUID.randomUUID(), attributesAndValues);
+    public static ObjectWithAttributes of(final Map<Integer, String> attributesAndValues, final int discriminatorColumn) {
+        return new ObjectWithAttributes(UUID.randomUUID(), attributesAndValues, discriminatorColumn);
     }
 
     public String humanReadableString() {

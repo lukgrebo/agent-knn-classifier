@@ -1,7 +1,6 @@
 package pl.wut.sag.knn.agent.clustering.algorithm;
 
 import lombok.RequiredArgsConstructor;
-import pl.wut.sag.knn.infrastructure.collection.ImmutableList;
 import pl.wut.sag.knn.infrastructure.function.Result;
 import pl.wut.sag.knn.infrastructure.parser.DoubleParser;
 import pl.wut.sag.knn.infrastructure.parser.ParseError;
@@ -16,7 +15,8 @@ public class EuclideanDistanceCalculator implements DistanceCalculator {
 
     @Override
     public double calculateDistance(final ObjectWithAttributes alreadyClassified, final ObjectWithAttributes other) {
-        return alreadyClassified.indexedAttributes().map(o -> singleDimenstionalDistance(o.getValue(), other.getAsString(o.getIndex())))
+        return alreadyClassified.indexedAttributesSkipDiscriminator()
+                .map(o -> singleDimenstionalDistance(o.getValue(), other.getAsString(o.getIndex())))
                 .map(d -> Math.pow(d, 2))
                 .reduce(Double::sum)
                 .map(Math::sqrt)
@@ -25,7 +25,7 @@ public class EuclideanDistanceCalculator implements DistanceCalculator {
 
     private double singleDimenstionalDistance(final String value, final Optional<String> other) {
         if (!other.isPresent()) {
-            return 0d; //TODO, missing attribute fine function
+            return 0.5D; //TODO, missing attribute fine function
         }
 
         final String otherValue = other.get();

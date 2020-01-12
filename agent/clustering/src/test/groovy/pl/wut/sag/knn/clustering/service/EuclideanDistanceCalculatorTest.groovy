@@ -29,6 +29,8 @@ class EuclideanDistanceCalculatorTest extends Specification {
         ObjectWithAttributes.of([1: "x", 2: "d", 3: "hehe"], 0) | ObjectWithAttributes.of([1: "x", 2: "d", 3: "hehe"], 0) | 0
         ObjectWithAttributes.of([1: "3", 2: "4"], 0)            | ObjectWithAttributes.of([1: "0", 2: "0"], 0)            | 5
         // missing attributes
-        ObjectWithAttributes.of(1: "5", 2: "25", 0)             | ObjectWithAttributes.of([:], 0)                         | 0 //TODO, what if attributes missing
+        ObjectWithAttributes.of(1: "5", 0)                      | ObjectWithAttributes.of([:], 0)                         | 0.5
+        // should not compare discriminator column
+        ObjectWithAttributes.of([0: "d1", 1: "!"], 0)           | ObjectWithAttributes.of([0: "d2", 1: "!"], 0)           | 0
     }
 }

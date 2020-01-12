@@ -9,4 +9,5 @@ public class MiningRequest {
     private URL miningUrl;
     private double minimalBid;
     private int refinementSize;
+    private int discriminatorColumn;
 }

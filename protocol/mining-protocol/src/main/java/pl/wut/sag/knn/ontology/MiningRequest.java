@@ -17,4 +17,5 @@ public class MiningRequest {
     private MiningRequestType type;
     private double minimalBid;
     private int refinementSize;
+    private int discriminatorColumn;
 }

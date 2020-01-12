@@ -55,7 +55,7 @@ public class UserAgent extends Agent implements UserAgentApiHandle {
     }
 
     private pl.wut.sag.knn.ontology.MiningRequest mapMiningRequest(final MiningRequest rq) {
-        return new pl.wut.sag.knn.ontology.MiningRequest(UUID.randomUUID(), rq.getMiningUrl(), MiningRequestType.URL, rq.getMinimalBid(), rq.getRefinementSize());
+        return new pl.wut.sag.knn.ontology.MiningRequest(UUID.randomUUID(), rq.getMiningUrl(), MiningRequestType.URL, rq.getMinimalBid(), rq.getRefinementSize(), rq.getDiscriminatorColumn());
 
     }
 }

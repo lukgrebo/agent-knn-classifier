@@ -3,6 +3,7 @@ package pl.wut.sag.knn.protocol;
 import jade.lang.acl.ACLMessage;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import pl.wut.sag.knn.ontology.MiningReport;
 import pl.wut.sag.knn.ontology.MiningRequest;
 import pl.wut.sag.knn.ontology.MiningStatus;
 import pl.wut.sag.knn.service.ServiceDescriptionFactory;
@@ -37,5 +38,14 @@ public class MiningProtocol extends Protocol {
             .protocol(instance)
             .stepName("Send mining status")
             .required(false)
+            .build();
+
+    public static TargetedStep<MiningProtocol, MiningReport> sendReport = TargetedStep.<MiningProtocol, MiningReport>targetedBuilder()
+            .performative(ACLMessage.INFORM)
+            .messageClass(MiningReport.class)
+            .protocol(instance)
+            .stepName("Send report")
+            .required(false)
+            .targetService(ServiceDescriptionFactory.name("user-agent"))
             .build();
 }

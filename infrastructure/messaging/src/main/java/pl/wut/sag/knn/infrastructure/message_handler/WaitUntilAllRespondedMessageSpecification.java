@@ -18,7 +18,12 @@ import java.util.function.Function;
  */
 public class WaitUntilAllRespondedMessageSpecification<R> implements IMessageSpecification {
 
-    private WaitUntilAllRespondedMessageSpecification(@NonNull final Set<AID> agentsToWaitFor, @NonNull final MessageTemplate messageTemplate, @NonNull final Function<ACLMessage, R> messageMapper, final Consumer<WaitUntilAllRespondedMessageSpecification<R>> doWithSpecification, final Consumer<Map<AID, R>> doWithResponses, final Duration timeout) {
+    private WaitUntilAllRespondedMessageSpecification(@NonNull final Set<AID> agentsToWaitFor,
+                                                      @NonNull final MessageTemplate messageTemplate,
+                                                      @NonNull final Function<ACLMessage, R> messageMapper,
+                                                      final Consumer<WaitUntilAllRespondedMessageSpecification<R>> doWithSpecification,
+                                                      final Consumer<Map<AID, R>> doWithResponses,
+                                                      final Duration timeout) {
         this.agentsToWaitFor = agentsToWaitFor;
         this.messageTemplate = messageTemplate;
         this.messageMapper = messageMapper;

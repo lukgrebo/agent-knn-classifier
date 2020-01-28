@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import pl.wut.sag.knn.agent.clustering.model.OwnedBid;
 import pl.wut.sag.knn.infrastructure.collection.CollectionUtil;
+import pl.wut.sag.knn.infrastructure.discovery.ServiceRegistration;
 import pl.wut.sag.knn.infrastructure.function.Result;
 import pl.wut.sag.knn.ontology.auction.Bid;
 import pl.wut.sag.knn.ontology.auction.ClusterSummary;
@@ -97,6 +98,8 @@ class DefaultRefinementManager implements RefinementManager {
         final ACLMessage messageToDataAgent = AuctionProtocol.refinementFinishedResponse.toResponse(refinementStartMessage, agent.codec.encode(refinementSummary));
 
         agent.send(messageToDataAgent);
+
+       agent.deregisterAndShutdown();
     }
 
     private void offerMostDistantElementToOtherAgents() {

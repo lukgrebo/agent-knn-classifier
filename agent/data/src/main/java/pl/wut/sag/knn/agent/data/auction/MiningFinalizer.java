@@ -4,7 +4,6 @@ import jade.core.AID;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import pl.wut.sag.knn.agent.data.DataAgent;
 import pl.wut.sag.knn.agent.data.model.ClusterSummaryWithObjects;
@@ -35,7 +34,6 @@ public interface MiningFinalizer {
 }
 
 @Slf4j
-@RequiredArgsConstructor
 class DefaultMiningFinalizer implements MiningFinalizer {
 
     private final MiningRequest miningRequest;
@@ -44,6 +42,17 @@ class DefaultMiningFinalizer implements MiningFinalizer {
     private final Codec codec;
     private final Map<UUID, ObjectWithAttributes> allObjects;
     private final ReportGenerator reportGenerator = ReportGenerator.stringToConsole();
+    private final ReportGenerator fileReportGenerator = ReportGenerator.file();
+    private final ReportGenerator sendToUserAgent;
+
+    DefaultMiningFinalizer(final MiningRequest miningRequest, final ServiceDiscovery serviceDiscovery, final DataAgent dataAgent, final Codec codec, final Map<UUID, ObjectWithAttributes> allObjects) {
+        this.miningRequest = miningRequest;
+        this.serviceDiscovery = serviceDiscovery;
+        this.dataAgent = dataAgent;
+        this.codec = codec;
+        this.allObjects = allObjects;
+        this.sendToUserAgent = ReportGenerator.sendToUserAgent(miningRequest.getRequestId(), codec::encode, serviceDiscovery, dataAgent::send);
+    }
 
     @Override
     public void finalizeMining() {
@@ -103,6 +112,10 @@ class DefaultMiningFinalizer implements MiningFinalizer {
                                         .collect(Collectors.toSet())))
                         .collect(Collectors.toList());
                 reportGenerator.generate(miningRequest.getMiningUrl(), clusterSummaryWithObjects);
+                fileReportGenerator.generate(miningRequest.getMiningUrl(), clusterSummaryWithObjects);
+                sendToUserAgent.generate(miningRequest.getMiningUrl(), clusterSummaryWithObjects);
+
+                dataAgent.finishAuction();
             }
 
         });

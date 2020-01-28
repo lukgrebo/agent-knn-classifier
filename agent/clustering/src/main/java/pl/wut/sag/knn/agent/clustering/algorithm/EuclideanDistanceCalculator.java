@@ -20,7 +20,8 @@ public class EuclideanDistanceCalculator implements DistanceCalculator {
                 .map(d -> Math.pow(d, 2))
                 .reduce(Double::sum)
                 .map(Math::sqrt)
-                .get();
+                .orElse(0D);
+
     }
 
     private double singleDimenstionalDistance(final String value, final Optional<String> other) {

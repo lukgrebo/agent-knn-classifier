@@ -13,7 +13,7 @@ public interface DistanceCalculator {
     default double calculateAverageDistance(final ImmutableList<ObjectWithAttributes> elements, final ObjectWithAttributes element) {
         return elements.stream()
                 .filter(el -> !(el == element))
-                .mapToDouble(el -> calculateDistance(element, el)).average().getAsDouble();
+                .mapToDouble(el -> calculateDistance(element, el)).average().orElse(0D);
     }
 
     default double calculateAverageDistaneInCluster(final ImmutableList<ObjectWithAttributes> elements) {

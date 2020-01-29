@@ -1,4 +1,4 @@
-package pl.wut.sag.knn.infrastructure.startup;
+package pl.wut.sag.classification.infrastructure.startup;
 
 public interface AgentStartupInfo {
     String platformId();

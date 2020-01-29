@@ -48,6 +48,7 @@ public class UserAgentApi {
                     }
                     ctx.result(miningResponse.result());
                 })
+
                 .get("/mining/report", ctx -> {
                     final String miningRequestId = ctx.queryParam(MINING_REQUEST_ID_PARAM);
                     if (miningRequestId == null || miningRequestId.isEmpty()) {

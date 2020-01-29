@@ -13,6 +13,7 @@
         <module>infrastructure</module>
         <module>ontology</module>
         <module>protocol</module>
+        <module>classification-prototype</module>
     </modules>
 
     <properties>

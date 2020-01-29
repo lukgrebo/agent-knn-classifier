@@ -13,4 +13,5 @@ import java.util.Set;
 public class TrainingRequest {
     private String className;
     private Set<ObjectWithAttributes> trainingSet;
+    private Set<ObjectWithAttributes> negativeSet;
 }

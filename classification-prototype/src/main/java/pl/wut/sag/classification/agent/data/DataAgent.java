@@ -28,6 +28,7 @@ import pl.wut.sag.classification.protocol.classy.DistanceInfo;
 import pl.wut.sag.classification.protocol.classy.TrainingRequest;
 
 import java.time.Duration;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -75,13 +76,18 @@ public class DataAgent extends Agent {
                 .filter(o -> o.getAsString(request.getDiscriminatorColumn()).isPresent())
                 .collect(Collectors.groupingBy(o -> o.getAsString(request.getDiscriminatorColumn()).get(), Collectors.toSet()));
 
-
         objectByClass.forEach((className, set) -> {
+            final Set<ObjectWithAttributes> negativeSet = objectByClass.keySet().stream()
+                    .filter(key -> !key.equals(className))
+                    .map(objectByClass::get)
+                    .flatMap(Collection::stream)
+//                    TODO implement limit
+                    .collect(Collectors.toSet());
 
             final AID agent = classificationAgentByClass.computeIfAbsent(className, c -> createClassificationAgent(c, request.getDiscriminatorColumn()));
             final ACLMessage msg = ClassificationProtocol.train.templatedMessage();
             msg.addReceiver(agent);
-            msg.setContent(codec.encode(new TrainingRequest(className, set)));
+            msg.setContent(codec.encode(new TrainingRequest(className, set, negativeSet)));
             this.send(msg);
         });
     }

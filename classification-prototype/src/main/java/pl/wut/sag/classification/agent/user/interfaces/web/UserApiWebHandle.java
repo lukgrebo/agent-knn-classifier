@@ -14,4 +14,7 @@ public interface UserApiWebHandle {
     String getResults(String context);
 
     String getResult(String context, UUID id);
+
+    String clearResults(String context);
+
 }

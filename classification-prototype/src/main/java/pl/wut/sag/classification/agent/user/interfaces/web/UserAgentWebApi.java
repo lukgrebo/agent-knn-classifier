@@ -1,6 +1,7 @@
 package pl.wut.sag.classification.agent.user.interfaces.web;
 
 import io.javalin.Javalin;
+import io.javalin.http.Context;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import pl.wut.sag.classification.agent.user.interfaces.web.dto.CheckObjectRequest;
@@ -9,6 +10,7 @@ import pl.wut.sag.classification.infrastructure.codec.Codec;
 import pl.wut.sag.classification.infrastructure.codec.DecodingError;
 import pl.wut.sag.classification.infrastructure.function.Result;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
@@ -44,6 +46,16 @@ public class UserAgentWebApi {
                     ctx.result(webHandle.getResults(context));
 
                 })
+                .post("/results/:context/clear", ctx -> {
+                    final String context = ctx.pathParam("context");
+
+                    if (context == null || context.isEmpty()) {
+                        ctx.result("Podanie kontekstu w ścieżce jest wymagane");
+                        return;
+                    }
+                    ctx.result(webHandle.clearResults(context));
+
+                })
                 .get("/results/:context/:id", ctx -> {
                     final String context = ctx.pathParam("context");
                     if (context == null || context.isEmpty()) {
@@ -62,6 +74,5 @@ public class UserAgentWebApi {
         return new UserAgentWebApi(javalin);
     }
 
-    ;
 
 }

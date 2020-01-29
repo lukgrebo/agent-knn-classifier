@@ -23,7 +23,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 
 public class UserAgent extends Agent {
     private final Map<String, AID> dataAgentByContext = new HashMap<>();
@@ -92,10 +94,7 @@ public class UserAgent extends Agent {
 
         @Override
         public String getResults(final String context) {
-            if (!dataAgentByContext.containsKey(context)) {
-                return "Nie znaleziono kontektu " + context;
-            }
-            return codec.encode(resultsByContext.computeIfAbsent(context, _k -> new ArrayList<>()));
+            return ensureContextFoundAnd(context, c -> codec.encode(resultsByContext.computeIfAbsent(c, _k -> new ArrayList<>())));
         }
 
         @Override
@@ -107,6 +106,21 @@ public class UserAgent extends Agent {
             return resultsByContext.get(context).stream().filter(o -> o.getObject().getId().equals(id)).findFirst()
                     .map(codec::encode)
                     .orElse("Nie ma jeszcze rezultatu dla obiektu o id " + id);
+        }
+
+        @Override
+        public String clearResults(final String context) {
+            return ensureContextFoundAnd(context, c -> {
+                Optional.ofNullable(resultsByContext.get(c)).ifPresent(List::clear);
+                return "Poprawnie wyczyszczono dane kontekstu";
+            });
+        }
+
+        private String ensureContextFoundAnd(final String context, Function<String, String> doWithContext) {
+            if (!dataAgentByContext.containsKey(context)) {
+                return "Nie znaleziono kontektu " + context;
+            }
+            return doWithContext.apply(context);
         }
     }
 }

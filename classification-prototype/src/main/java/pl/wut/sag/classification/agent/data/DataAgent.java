@@ -75,13 +75,14 @@ public class DataAgent extends Agent {
         final Map<String, Set<ObjectWithAttributes>> objectByClass = objects.stream()
                 .filter(o -> o.getAsString(request.getDiscriminatorColumn()).isPresent())
                 .collect(Collectors.groupingBy(o -> o.getAsString(request.getDiscriminatorColumn()).get(), Collectors.toSet()));
+        final int totalSize = objectByClass.values().stream().mapToInt(Set::size).sum();
 
         objectByClass.forEach((className, set) -> {
             final Set<ObjectWithAttributes> negativeSet = objectByClass.keySet().stream()
                     .filter(key -> !key.equals(className))
                     .map(objectByClass::get)
                     .flatMap(Collection::stream)
-//                    TODO implement limit
+                    .limit((int) ((totalSize - set.size()) * request.getTraningSetWeight()))
                     .collect(Collectors.toSet());
 
             final AID agent = classificationAgentByClass.computeIfAbsent(className, c -> createClassificationAgent(c, request.getDiscriminatorColumn()));

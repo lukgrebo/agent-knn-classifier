@@ -56,6 +56,8 @@ public class UserAgent extends Agent {
                 return "Należy wskazać indeks kolumny, w której znajdują się atrybuty oznaczający klasę";
             } else if (request.getTrainingSetUrl() == null) {
                 return "Należy podać poprawny url zbioru treningowego";
+            } else if(request.getTraningSetWeight() >= 0.1 || request.getTraningSetWeight() <= 1) {
+                return "Wielkość wagi setu powinna być pomiędzy 0.1, a 1";
             }
             final AID aid = dataAgentByContext.computeIfAbsent(request.getContext(), dataAgentStarter::run);
 

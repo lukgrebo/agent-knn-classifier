@@ -9,4 +9,5 @@ public class OrderClassificationTrainingRequest {
     private String context;
     private Integer discriminatorColumn;
     private URL trainingSetUrl;
+    private double traningSetWeight;
 }

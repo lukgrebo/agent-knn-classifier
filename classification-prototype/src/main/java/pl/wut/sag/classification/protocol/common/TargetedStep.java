@@ -13,11 +13,10 @@ public class TargetedStep<T extends Protocol, C> extends ProtocolStep<T, C> {
     @Builder(builderMethodName = "targetedBuilder")
     protected TargetedStep(@NonNull final String stepName,
                            @NonNull final int performative,
-                           @NonNull final boolean required,
                            @NonNull final Class<C> messageClass,
                            @NonNull final T protocol,
                            @NonNull final ServiceDescription targetService) {
-        super(stepName, performative, required, messageClass, protocol);
+        super(stepName, performative, messageClass, protocol);
         this.targetService = targetService;
     }
 }

@@ -9,10 +9,9 @@ public class ResponseStep<T extends Protocol, C> extends ProtocolStep<T, C> {
     @Builder(builderMethodName = "responseStepBuilder")
     protected ResponseStep(final @NonNull String stepName,
                            @NonNull final int performative,
-                           @NonNull final boolean required,
                            final @NonNull Class<C> messageClass,
                            @NonNull final T protocol) {
-        super(stepName, performative, required, messageClass, protocol);
+        super(stepName, performative, messageClass, protocol);
     }
 
     public ACLMessage toResponse(final ACLMessage originalRequest, final String content) {

@@ -22,6 +22,7 @@ import pl.wut.sag.classification.protocol.classy.TrainingRequest;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -63,8 +64,8 @@ public class ClassificationAgent extends Agent {
         final Map<String, Long> counts = kNearestNeightbours.runAndGetVotes(all(), object, 10).entrySet().stream()
                 .map(e -> e.getKey().getClassname().get())
                 .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
-        final int positiveN = counts.get(className).intValue();
-        final int negativeN = counts.size() - positiveN;
+        final int positiveN = Optional.ofNullable(counts.get(className)).map(Long::intValue).orElse(0);
+        final int negativeN = (int) counts.values().stream().mapToLong(i -> i).sum() - positiveN;
 
         final DistanceInfo distanceInfo = new DistanceInfo(averagePositiveDistance, averageNegativeDistance, positiveN, negativeN, className);
         final ACLMessage reply = ClassificationProtocol.sendDistanceInfo.toResponse(message, codec.encode(distanceInfo));

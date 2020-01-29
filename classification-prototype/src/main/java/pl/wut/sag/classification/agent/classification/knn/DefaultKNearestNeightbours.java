@@ -18,7 +18,7 @@ public class DefaultKNearestNeightbours implements KNearestNeightbours {
     @Override
     public Map<ObjectWithAttributes, String> runAndGetVotes(final Set<ObjectWithAttributes> cluster, final ObjectWithAttributes candidate, final int k) {
         final Set<ObjectWithAttributes> nearestNeighbours = cluster.stream()
-                .sorted(Comparator.comparingDouble((ObjectWithAttributes o) -> distanceCalculator.calculateDistance(o, candidate)).reversed())
+                .sorted(Comparator.comparingDouble((ObjectWithAttributes o) -> distanceCalculator.calculateDistance(o, candidate)))
                 .limit(k)
                 .collect(Collectors.toSet());
 

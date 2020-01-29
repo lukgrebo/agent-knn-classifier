@@ -31,7 +31,6 @@ public class ClassificationProtocol extends Protocol {
                     .stepName("Order training")
                     .messageClass(OrderClassificationTrainingRequest.class)
                     .performative(ACLMessage.REQUEST)
-                    .required(true)
                     .build();
 
     public static ProtocolStep<ClassificationProtocol, TrainingRequest> train = ProtocolStep.<ClassificationProtocol, TrainingRequest>builder()
@@ -39,7 +38,6 @@ public class ClassificationProtocol extends Protocol {
             .stepName("train")
             .messageClass(TrainingRequest.class)
             .performative(ACLMessage.REQUEST)
-            .required(true)
             .build();
 
     public static ProtocolStep<ClassificationProtocol, CheckDistanceRequest> checkDistance =
@@ -48,7 +46,6 @@ public class ClassificationProtocol extends Protocol {
                     .stepName("check distance")
                     .messageClass(CheckDistanceRequest.class)
                     .performative(ACLMessage.CFP)
-                    .required(false)
                     .build();
 
     public static ResponseStep<ClassificationProtocol, DistanceInfo> sendDistanceInfo =
@@ -57,7 +54,6 @@ public class ClassificationProtocol extends Protocol {
                     .stepName("send distance")
                     .messageClass(DistanceInfo.class)
                     .performative(ACLMessage.PROPOSE)
-                    .required(true)
                     .build();
 
     public static TargetedStep<ClassificationProtocol, ClassificationResult> sendResult =
@@ -67,6 +63,5 @@ public class ClassificationProtocol extends Protocol {
                     .messageClass(ClassificationResult.class)
                     .performative(ACLMessage.INFORM)
                     .targetService(ServiceDescriptionFactory.name("result-gatherer"))
-                    .required(false)
                     .build();
 }

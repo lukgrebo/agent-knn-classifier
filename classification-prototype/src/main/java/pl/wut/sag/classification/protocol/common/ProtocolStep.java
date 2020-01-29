@@ -14,19 +14,16 @@ public class ProtocolStep<T extends Protocol, C> {
 
     private final String stepName;
     private final int performative;
-    private final boolean required;
     private final Class<C> messageClass;
     private final T protocol;
 
     @Builder
     protected ProtocolStep(@NonNull final String stepName,
                            @NonNull final int performative,
-                           @NonNull final boolean required,
                            @NonNull final Class<C> messageClass,
                            @NonNull final T protocol) {
         this.stepName = Objects.requireNonNull(stepName);
         this.performative = performative;
-        this.required = required;
         this.messageClass = messageClass;
         this.protocol = protocol;
     }

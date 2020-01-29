@@ -5,6 +5,8 @@ import jade.core.Agent;
 import jade.lang.acl.ACLMessage;
 import pl.wut.sag.classification.agent.classification.distance.DistanceCalculator;
 import pl.wut.sag.classification.agent.classification.distance.EuclideanDistanceCalculator;
+import pl.wut.sag.classification.agent.classification.knn.DefaultKNearestNeightbours;
+import pl.wut.sag.classification.agent.classification.knn.KNearestNeightbours;
 import pl.wut.sag.classification.domain.object.ObjectWithAttributes;
 import pl.wut.sag.classification.infrastructure.codec.Codec;
 import pl.wut.sag.classification.infrastructure.collection.ImmutableList;
@@ -19,13 +21,18 @@ import pl.wut.sag.classification.protocol.classy.TrainingRequest;
 
 import java.time.Duration;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class ClassificationAgent extends Agent {
 
     private String className;
     private int discriminatorColumn;
     private final DistanceCalculator distanceCalculator = new EuclideanDistanceCalculator(new DoubleParser());
+    private final KNearestNeightbours kNearestNeightbours = new DefaultKNearestNeightbours(distanceCalculator);
     private final Codec codec = Codec.json();
     private final Set<ObjectWithAttributes> trainingSet = new HashSet<>();
     private final Set<ObjectWithAttributes> negastiveSet = new HashSet<>();
@@ -53,9 +60,18 @@ public class ClassificationAgent extends Agent {
         object.setDiscriminatorColumn(discriminatorColumn);
         final double averagePositiveDistance = distanceCalculator.calculateAverageDistance(ImmutableList.of(trainingSet), object);
         final double averageNegativeDistance = distanceCalculator.calculateAverageDistance(ImmutableList.of(negastiveSet), object);
+        final Map<String, Long> counts = kNearestNeightbours.runAndGetVotes(all(), object, 10).entrySet().stream()
+                .map(e -> e.getKey().getClassname().get())
+                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+        final int positiveN = counts.get(className).intValue();
+        final int negativeN = counts.size() - positiveN;
 
-        final DistanceInfo distanceInfo = new DistanceInfo(averagePositiveDistance, averageNegativeDistance, 0, 0, className);
+        final DistanceInfo distanceInfo = new DistanceInfo(averagePositiveDistance, averageNegativeDistance, positiveN, negativeN, className);
         final ACLMessage reply = ClassificationProtocol.sendDistanceInfo.toResponse(message, codec.encode(distanceInfo));
         send(reply);
+    }
+
+    private Set<ObjectWithAttributes> all() {
+        return Stream.concat(negastiveSet.stream(), trainingSet.stream()).collect(Collectors.toSet());
     }
 }

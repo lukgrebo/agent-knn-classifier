@@ -3,7 +3,6 @@ package pl.wut.sag.classification.domain.object;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
@@ -71,5 +70,9 @@ public final class ObjectWithAttributes {
                 .map(Optional::ofNullable)
                 .map(o -> o.orElse(" "))
                 .collect(Collectors.joining(","));
+    }
+
+    public Optional<String> getClassname() {
+        return getAsString(discriminatorColumn);
     }
 }

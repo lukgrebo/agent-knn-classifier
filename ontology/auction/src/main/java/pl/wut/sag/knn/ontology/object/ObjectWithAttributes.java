@@ -33,6 +33,10 @@ public final class ObjectWithAttributes {
         return Optional.ofNullable(attributesAndValues.get(attributeOrderNumber));
     }
 
+    public Optional<String> getClassname() {
+        return discriminatorColumn < 0 ? Optional.empty() : getAsString(discriminatorColumn);
+    }
+
     public int nAttributes() {
         return attributesAndValues.size();
     }

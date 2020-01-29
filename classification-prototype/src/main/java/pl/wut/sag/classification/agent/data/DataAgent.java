@@ -34,6 +34,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -114,8 +115,8 @@ public class DataAgent extends Agent {
     }
 
     private void handleAgentResponses(final Map<AID, DistanceInfo> responses, final CheckDistanceRequest originalRequest) {
-        final Map<String, Double> distanceByClass = responses.values().stream()
-                .collect(Collectors.toMap(DistanceInfo::getClassName, DistanceInfo::getAveragePositiveDistance));
+        final Map<String, DistanceInfo> distanceByClass = responses.values().stream()
+                .collect(Collectors.toMap(DistanceInfo::getClassName, Function.identity()));
         final ClassificationResult result = ClassificationResult.of(originalRequest.getObjectWithAttributes(), distanceByClass);
         final ACLMessage message = ClassificationProtocol.sendResult.templatedMessage();
         discovery.findServices(ClassificationProtocol.sendResult.getTargetService()).result().stream()

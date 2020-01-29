@@ -28,6 +28,7 @@ public class ClassificationAgent extends Agent {
     private final DistanceCalculator distanceCalculator = new EuclideanDistanceCalculator(new DoubleParser());
     private final Codec codec = Codec.json();
     private final Set<ObjectWithAttributes> trainingSet = new HashSet<>();
+    private final Set<ObjectWithAttributes> negastiveSet = new HashSet<>();
 
     @Override
     protected void setup() {
@@ -43,15 +44,17 @@ public class ClassificationAgent extends Agent {
     private void train(final ACLMessage aclMessage) {
         final TrainingRequest request = codec.decode(aclMessage.getContent(), ClassificationProtocol.train.getMessageClass()).result();
         trainingSet.addAll(request.getTrainingSet());
+        negastiveSet.addAll(request.getNegativeSet());
     }
 
     private void checkDistance(final ACLMessage message) {
         final CheckDistanceRequest request = codec.decode(message.getContent(), ClassificationProtocol.checkDistance.getMessageClass()).result();
         final ObjectWithAttributes object = request.getObjectWithAttributes();
         object.setDiscriminatorColumn(discriminatorColumn);
-        final double averageDistance = distanceCalculator.calculateAverageDistance(ImmutableList.of(trainingSet), object);
+        final double averagePositiveDistance = distanceCalculator.calculateAverageDistance(ImmutableList.of(trainingSet), object);
+        final double averageNegativeDistance = distanceCalculator.calculateAverageDistance(ImmutableList.of(negastiveSet), object);
 
-        final DistanceInfo distanceInfo = new DistanceInfo(averageDistance, className);
+        final DistanceInfo distanceInfo = new DistanceInfo(averagePositiveDistance, averageNegativeDistance, 0, 0, className);
         final ACLMessage reply = ClassificationProtocol.sendDistanceInfo.toResponse(message, codec.encode(distanceInfo));
         send(reply);
     }

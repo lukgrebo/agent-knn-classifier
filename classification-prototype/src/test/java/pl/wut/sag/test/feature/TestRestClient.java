@@ -64,9 +64,11 @@ public class TestRestClient {
         final Request request = toRequest.apply(rqBuilder(uri));
         log.info("Performing operation url: {} method: {}", uri, request.method());
         try (final Response response = client.newCall(request).execute()) {
-            if (OK == response.code())
-                return parseResponse.apply(response.body().string());
-            else {
+            if (OK == response.code()) {
+                final String body = response.body().string();
+                log.info("Got response {}", body);
+                return parseResponse.apply(body);
+            } else {
                 throw new RuntimeException(response.body().string());
             }
         } catch (final IOException e) {

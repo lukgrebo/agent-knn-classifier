@@ -67,11 +67,13 @@ public class DataAgent extends Agent {
     private void runTraining(final ACLMessage message) {
         log.info("Got training message: {}", message.getContent());
         final OrderClassificationTrainingRequest request = codec.decode(message.getContent(), ClassificationProtocol.orderTraining.getMessageClass()).result();
+        log.info("Loading data from {}", request.getTrainingSetUrl());
         final List<ObjectWithAttributes> objects = dataLoader.getData(request.getTrainingSetUrl()).getOrThrow(RuntimeException::new).stream()
                 .map(s -> csvObjectParser.parse(s, request.getDiscriminatorColumn()))
                 .filter(Result::isValid)
                 .map(Result::result)
                 .collect(Collectors.toList());
+        log.info("Data loading done");
 
         final Map<String, Set<ObjectWithAttributes>> objectByClass = objects.stream()
                 .filter(o -> o.getAsString(request.getDiscriminatorColumn()).isPresent())

@@ -7,6 +7,7 @@ import jade.lang.acl.ACLMessage;
 import pl.wut.sag.classification.agent.user.interfaces.web.UserAgentWebApi;
 import pl.wut.sag.classification.agent.user.interfaces.web.UserApiWebHandle;
 import pl.wut.sag.classification.agent.user.interfaces.web.dto.CheckObjectRequest;
+import pl.wut.sag.classification.agent.user.interfaces.web.dto.CheckObjectResponse;
 import pl.wut.sag.classification.agent.user.interfaces.web.dto.OrderClassificationTrainingRequest;
 import pl.wut.sag.classification.domain.object.ObjectWithAttributes;
 import pl.wut.sag.classification.infrastructure.codec.Codec;
@@ -89,7 +90,7 @@ public class UserAgent extends Agent {
             message.setConversationId(UUID.randomUUID().toString());
             send(message);
 
-            return "Dodano obiekt od ewaluacji, aby sprawdzić status pobierz wiadomości. Obiekt otrzymał id: " + object.getId();
+            return codec.encode(CheckObjectResponse.valid(object.getId()));
         }
 
         @Override

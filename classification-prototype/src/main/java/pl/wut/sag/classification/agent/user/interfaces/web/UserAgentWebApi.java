@@ -1,7 +1,6 @@
 package pl.wut.sag.classification.agent.user.interfaces.web;
 
 import io.javalin.Javalin;
-import io.javalin.http.Context;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import pl.wut.sag.classification.agent.user.interfaces.web.dto.CheckObjectRequest;
@@ -10,7 +9,6 @@ import pl.wut.sag.classification.infrastructure.codec.Codec;
 import pl.wut.sag.classification.infrastructure.codec.DecodingError;
 import pl.wut.sag.classification.infrastructure.function.Result;
 
-import java.util.Optional;
 import java.util.UUID;
 
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)

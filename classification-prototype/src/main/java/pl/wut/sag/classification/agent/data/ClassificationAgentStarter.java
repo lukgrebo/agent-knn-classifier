@@ -29,10 +29,19 @@ class ClassificationAgentStarter {
 
         Result<List<DFAgentDescription>, FIPAException> search;
         do {
+            sleep();
             search = serviceDiscovery.findServices(ClassificationProtocol.classificationAgentOfClassName(dependencies.getClassName()));
         } while (search.isError() || search.result().isEmpty());
 
         return search.result().get(0).getName();
+    }
+
+    private void sleep() {
+        try {
+            Thread.sleep(300);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 }

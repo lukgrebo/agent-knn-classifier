@@ -31,15 +31,16 @@ import java.util.function.Function;
 public class UserAgent extends Agent {
     private final Map<String, AID> dataAgentByContext = new HashMap<>();
     private final ServiceDiscovery serviceDiscovery = new ServiceDiscovery(this);
-    private final DataAgentStarter dataAgentStarter = new DataAgentStarter(serviceDiscovery);
+    private final DataAgentStarter dataAgentStarter = new DataAgentStarter();
     private final Map<String, List<ClassificationResult>> resultsByContext = new HashMap<>();
     private final Codec codec = Codec.json();
+    private final MessageHandler messageHandler = new MessageHandler(MessageSpecification.of(ClassificationProtocol.sendResult.toMessageTemplate(), this::handleResult));
 
     @Override
     protected void setup() {
         UserAgentWebApi.setupApi(8080, new AgentWebHandler());
         ServiceRegistration.registerRetryOnFailure(this, Duration.ofSeconds(1), ClassificationProtocol.sendResult.getTargetService());
-        addBehaviour(new MessageHandler(MessageSpecification.of(ClassificationProtocol.sendResult.toMessageTemplate(), this::handleResult)));
+        addBehaviour(messageHandler);
     }
 
     private void handleResult(final ACLMessage message) {
@@ -62,14 +63,24 @@ public class UserAgent extends Agent {
             } else if (request.getTraningSetWeight() < 0.1 || request.getTraningSetWeight() > 1) {
                 return "Wielkość wagi setu powinna być pomiędzy 0.1, a 1";
             }
-            final AID aid = dataAgentByContext.computeIfAbsent(request.getContext(), dataAgentStarter::run);
+            if (dataAgentByContext.get(request.getContext()) == null) {
+                dataAgentStarter.run(request.getContext(), getAID(), messageHandler, aid -> {
+                    dataAgentByContext.put(request.getContext(), aid);
+                    sendRequestToDataAgent(request);
+                });
+            } else {
+                sendRequestToDataAgent(request);
+            }
 
+            return "Zlecono uczenie, kontekst: " + request.getContext();
+        }
+
+        private void sendRequestToDataAgent(final OrderClassificationTrainingRequest request) {
+            final AID aid = dataAgentByContext.get(request.getContext());
             final ACLMessage message = ClassificationProtocol.orderTraining.templatedMessage();
             message.addReceiver(aid);
             message.setContent(codec.encode(request));
             UserAgent.this.send(message);
-
-            return "Zlecono uczenie, kontekst: " + request.getContext();
         }
 
         @Override

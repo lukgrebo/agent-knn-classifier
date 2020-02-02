@@ -8,4 +8,5 @@ import lombok.RequiredArgsConstructor;
 public class ClassificationAgentDependencies {
     private final String className;
     private final int discriminatorColumn;
+    private final int id;
 }

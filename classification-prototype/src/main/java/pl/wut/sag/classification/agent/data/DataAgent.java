@@ -26,22 +26,27 @@ import pl.wut.sag.classification.protocol.classy.ClassificationProtocol;
 import pl.wut.sag.classification.protocol.classy.ClassificationResult;
 import pl.wut.sag.classification.protocol.classy.DistanceInfo;
 import pl.wut.sag.classification.protocol.classy.TrainingRequest;
+import pl.wut.sag.classification.protocol.up.ImUpProtocol;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Slf4j
 public class DataAgent extends Agent {
 
     private String context;
-    private final Map<String, AID> classificationAgentByClass = new HashMap<>();
+    private AID userAgent;
+    private final int agentsPerClass = 4;
+    private final Map<String, List<AID>> classificationAgentByClass = new HashMap<>();
     private final DataLoader dataLoader = DataLoader.defaultLoader();
     private final Codec codec = Codec.json();
     private final CsvObjectParser csvObjectParser = new CsvObjectParser();
@@ -55,18 +60,24 @@ public class DataAgent extends Agent {
 
     @Override
     protected void setup() {
-        this.context = (String) getArguments()[0];
+        final DataAgentDependencies dependencies = (DataAgentDependencies) getArguments()[0];
+        this.context = dependencies.getContext();
+        this.userAgent = dependencies.getUserAgent();
 
         addBehaviour(messageHandler);
 
         this.classificatorsContainer = new AgentStartupManager().startChildContainer(AgentStartupInfo.withDefaults("classificator-container-" + context));
 
         ServiceRegistration.registerRetryOnFailure(this, Duration.ofSeconds(5), ClassificationProtocol.dataAgentOfContext(context));
+        final ACLMessage imUpMessage = ImUpProtocol.imUp.templatedMessage();
+        imUpMessage.addReceiver(userAgent);
+        send(imUpMessage);
     }
 
     private void runTraining(final ACLMessage message) {
-        log.info("Got training message: {}", message.getContent());
         final OrderClassificationTrainingRequest request = codec.decode(message.getContent(), ClassificationProtocol.orderTraining.getMessageClass()).result();
+        log.info("Got training message: {}", message.getContent());
+
         log.info("Loading data from {}", request.getTrainingSetUrl());
         final List<ObjectWithAttributes> objects = dataLoader.getData(request.getTrainingSetUrl()).getOrThrow(RuntimeException::new).stream()
                 .map(s -> csvObjectParser.parse(s, request.getDiscriminatorColumn()))
@@ -88,22 +99,27 @@ public class DataAgent extends Agent {
                     .limit((int) ((totalSize - set.size()) * request.getTraningSetWeight()))
                     .collect(Collectors.toSet());
 
-            final AID agent = classificationAgentByClass.computeIfAbsent(className, c -> createClassificationAgent(c, request.getDiscriminatorColumn()));
-            final ACLMessage msg = ClassificationProtocol.train.templatedMessage();
-            msg.addReceiver(agent);
-            msg.setContent(codec.encode(new TrainingRequest(className, set, negativeSet)));
-            this.send(msg);
+            final List<AID> agents = classificationAgentByClass.computeIfAbsent(className, k -> IntStream.range(0, agentsPerClass).mapToObj(i -> createClassificationAgent(className, request.getDiscriminatorColumn(), i))
+                    .collect(Collectors.toList()));
+            for (final AID agent : agents) {
+                final ACLMessage msg = ClassificationProtocol.train.templatedMessage();
+                msg.addReceiver(agent);
+                msg.setContent(codec.encode(new TrainingRequest(className, randomChoice(set, 0.7), randomChoice(negativeSet, request.getTraningSetWeight()))));
+                this.send(msg);
+            }
         });
     }
 
     private void checkDistance(final ACLMessage message) {
         message.clearAllReceiver();
         message.setSender(getAID());
-        classificationAgentByClass.values().forEach(message::addReceiver);
+        classificationAgentByClass.values().stream().flatMap(Collection::stream).forEach(message::addReceiver);
         final CheckDistanceRequest originalRequest = codec.decode(message.getContent(), ClassificationProtocol.checkDistance.getMessageClass()).result();
 
+        final List<AID> allAgents = classificationAgentByClass.values().stream().flatMap(Collection::stream).collect(Collectors.toList());
+
         WaitUntilAllRespondedMessageSpecification.complexWithRegisterAndDeregister(
-                new HashSet<>(classificationAgentByClass.values()),
+                new HashSet<>(allAgents),
                 message,
                 messageHandler,
                 r -> codec.decode(r.getContent(), DistanceInfo.class).result(),
@@ -112,14 +128,15 @@ public class DataAgent extends Agent {
         this.send(message);
     }
 
-    private AID createClassificationAgent(final String className, final int discriminatorColumn) {
-        return starter.run(new ClassificationAgentDependencies(className, discriminatorColumn), classificatorsContainer);
+    private AID createClassificationAgent(final String className, final int discriminatorColumn, final int index) {
+        return starter.run(new ClassificationAgentDependencies(className, discriminatorColumn, index), classificatorsContainer);
     }
 
     private void handleAgentResponses(final Map<AID, DistanceInfo> responses, final CheckDistanceRequest originalRequest) {
-        final Map<String, DistanceInfo> distanceByClass = responses.values().stream()
-                .collect(Collectors.toMap(DistanceInfo::getClassName, Function.identity()));
-        final ClassificationResult result = ClassificationResult.of(originalRequest.getObjectWithAttributes(), distanceByClass);
+        final Map<String, List<DistanceInfo>> distanceByClass = responses.values().stream()
+                .collect(Collectors.groupingBy(DistanceInfo::getClassName));
+
+        final ClassificationResult result = ClassificationResult.of(originalRequest.getObjectWithAttributes(), average(distanceByClass));
         final ACLMessage message = ClassificationProtocol.sendResult.templatedMessage();
         discovery.findServices(ClassificationProtocol.sendResult.getTargetService()).result().stream()
                 .map(DFAgentDescription::getName)
@@ -129,4 +146,25 @@ public class DataAgent extends Agent {
         send(message);
     }
 
+    final Map<String, DistanceInfo> average(final Map<String, List<DistanceInfo>> distancesByClass) {
+        return distancesByClass.entrySet().stream().collect(
+                Collectors.toMap(Map.Entry::getKey, e -> summary(e.getValue()))
+        );
+    }
+
+    private DistanceInfo summary(List<DistanceInfo> distances) {
+        final int positiveSum = distances.stream().mapToInt(DistanceInfo::getNNeighboursPositive).sum();
+        final int negativeSum = distances.stream().mapToInt(DistanceInfo::getNNeightboursNegative).sum();
+        final double averagePositive = distances.stream().mapToDouble(DistanceInfo::getAveragePositiveDistance).average().getAsDouble();
+        final double averageNegative = distances.stream().mapToDouble(DistanceInfo::getAverageNegativeDistance).average().getAsDouble();
+
+        return new DistanceInfo(averagePositive, averageNegative, positiveSum, negativeSum, distances.get(0).getClassName());
+    }
+
+    private <T> Set<T> randomChoice(final Collection<T> collection, final double percentage) {
+        final List<T> original = new ArrayList<>(collection);
+        final int size = (int)(percentage * original.size());
+        final Random rand = new Random();
+        return IntStream.range(1, size).map(rand::nextInt).mapToObj(original::get).collect(Collectors.toSet());
+    }
 }

@@ -22,7 +22,7 @@ class ClassificationAgentStarter {
 
     public AID run(final ClassificationAgentDependencies dependencies, final AgentContainer container) {
         try {
-            startupManager.startAgent(container, ClassificationAgent.class, "class-agent-" + dependencies.getClassName(), dependencies);
+            startupManager.startAgent(container, ClassificationAgent.class, "class-agent-" + dependencies.getClassName() + dependencies.getId(), dependencies);
         } catch (StaleProxyException e) {
             throw new RuntimeException(e);
         }
